@@ -1058,7 +1058,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
             // 初始化
             if (tab == null || (n = tab.length) == 0) {
             	tab = initTable();
-            } else if ((f = tabAt(tab, i = (n - 1) & hash)) == null) {
+            } else if ((f = tabAt(tab, i = (n - 1) & hash)) == null) { // 如果该位置上没有元素
                 if (casTabAt(tab, i, null, new Node<K,V>(hash, key, value, null))) {
                 	break;                   // no lock when adding to empty bin
                 }
