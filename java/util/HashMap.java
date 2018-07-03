@@ -230,9 +230,9 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      */
 
     /**
-     * The default initial capacity - MUST be a power of two.
+     * The default initial capacity - MUST be a power of two. <br>
      * 
-     * 数组默认的容量为 16。
+     * 数组默认的容量为 16。<br>
      * 这种写法可以让人一眼看明白必须是 2 的平方，就像一天是 60 * 60 * 24
      */
     static final int DEFAULT_INITIAL_CAPACITY = 1 << 4; // aka 16
@@ -625,11 +625,14 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     /**
      * Implements Map.put and related methods
      *
-     * @param hash hash for key
+     * @param hash hash for key <br>
+     *        key 的 hashcode
      * @param key the key
      * @param value the value to put
-     * @param onlyIfAbsent if true, don't change existing value
-     * @param evict if false, the table is in creation mode.
+     * @param onlyIfAbsent if true, don't change existing value <br>
+     *        如果 onlyIfAbsent = true，不会改变已经存在 key 的 value 值
+     * @param evict if false, the table is in creation mode. <br>
+     *        在 hashmap 里面，这个参数是假的
      * @return previous value, or null if none
      */
     final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
@@ -650,13 +653,14 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         } else {
             Node<K,V> e; K k;
             
-            // 存在一个相同的 key
+            // 存在一个相同的 key，并取出
             if (p.hash == hash && ((k = p.key) == key || (key != null && key.equals(k)))) {
             	e = p;
             } else if (p instanceof TreeNode) { // 如果节点的类型是树形结构
             	e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);
-            } else { // 如果存在相同的 key
+            } else { // 如果节点为链表结构
                 for (int binCount = 0; ; ++binCount) {
+                	// 插入到链表的最后面
                     if ((e = p.next) == null) {
                         p.next = newNode(hash, key, value, null);
                         // 如果链表的的元素数量达到了 8 个，则链表结构变为红黑树
@@ -669,18 +673,19 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                     if (e.hash == hash && ((k = e.key) == key || (key != null && key.equals(k)))) {
                     	break;
                     }
-                    
+                    // 指向链表的下一个节点
                     p = e;
                 }
             }
-            
+
+            // 存在一个相同的 key
             if (e != null) { // existing mapping for key
                 V oldValue = e.value;
                 if (!onlyIfAbsent || oldValue == null) {
                 	e.value = value;
                 }
                 afterNodeAccess(e);
-                // 如果存在一个相同的 key，返回旧的 value
+                // 返回旧的 value
                 return oldValue;
             }
         }
@@ -698,8 +703,11 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     }
 
     /**
-     * Initializes or doubles table size.  If null, allocates in
-     * accord with initial capacity target held in field threshold.
+     * Initializes or doubles table size. <br>
+     * 初始化或者将数组的容量翻倍 <br>
+     * 
+     * If null, allocates in accord with initial capacity target held in field threshold.
+     * 
      * Otherwise, because we are using power-of-two expansion, the
      * elements from each bin must either stay at same index, or move
      * with a power of two offset in the new table.
@@ -711,14 +719,16 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     final Node<K,V>[] resize() {
     	
         Node<K,V>[] oldTab = table;
+        
         // 当前数组的容量
         int oldCap = (oldTab == null) ? 0 : oldTab.length;
+        
         // 当前数组的阀值
         int oldThr = threshold;
         
         int newCap, newThr = 0;
         
-        // 如果当前数组的容量大于 0
+        // 如果当前数组的容量大于 0，则扩容
         if (oldCap > 0) {
         	// 如果当前数据的容量大于了最大容量
         	if (oldCap >= MAXIMUM_CAPACITY) {
@@ -727,8 +737,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         		return oldTab;
         	} else if ((newCap = oldCap << 1) < MAXIMUM_CAPACITY && oldCap >= DEFAULT_INITIAL_CAPACITY) {
         		/*
-        		 * 如果当前数组的容量的平方小于最大容量
-        		 * 且当前数组的容量大于默认的容量
+        		 * 如果当前数组的容量的平方小于最大容量 且 当前数组的容量大于默认的容量
         		 * 
         		 * 则新数组容量为当前数组容量的平方
         		 * 新数组容量的阀值为当前数组容量的阀值的平方
@@ -736,16 +745,22 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         		newThr = oldThr << 1; // double threshold
         	}
         } else if (oldThr > 0) { // initial capacity was placed in threshold
+        	/*
+        	 * new HashMap(capacity) 或 new HashMap(capacity, threshold) 时设置的 threshold，但是这个时候的 threadhold 其实是容量
+        	 * 因为是根据 tableSizeFor(int cap)，也就是用户自定义的容量来初始化 threadhold
+        	 * 但是用户自定义的容量不一定是 2 的倍数，所以 tableSizeFor 做了一层转换
+        	 */
             newCap = oldThr;
         } else {                 
         	/*
         	 * zero initial threshold signifies using defaults
-        	 * 通过默认的容量与装载因子进行初始化
+        	 * 通过默认的容量与装载因子进行初始化，即 new HashMap() 后，第一次调用 put 方法
         	 */
-            newCap = DEFAULT_INITIAL_CAPACITY;
-            newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY);
+            newCap = DEFAULT_INITIAL_CAPACITY; // 16
+            newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY); // 0.75 * 16 = 12
         }
         
+        // 如果通过 new HashMap(capacity, loadFactor) 来进行初始化
         if (newThr == 0) {
             float ft = (float)newCap * loadFactor;
             newThr = (newCap < MAXIMUM_CAPACITY && ft < (float)MAXIMUM_CAPACITY ? (int)ft : Integer.MAX_VALUE);
@@ -759,16 +774,24 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         Node<K,V>[] newTab = (Node<K,V>[])new Node[newCap];
         
         table = newTab;
+
+        // 数组扩容之后的数据迁移，第一次初始化不会执行这个
         if (oldTab != null) {
             for (int j = 0; j < oldCap; ++j) {
                 Node<K,V> e;
                 if ((e = oldTab[j]) != null) {
-                    oldTab[j] = null;
-                    if (e.next == null)
-                        newTab[e.hash & (newCap - 1)] = e;
-                    else if (e instanceof TreeNode)
-                        ((TreeNode<K,V>)e).split(this, newTab, j, oldCap);
-                    else { // preserve order
+                	
+                    oldTab[j] = null; // 将当前位置的值置为空
+                    
+                    if (e.next == null) { 
+                    	// 如果当前节点的 next 为空，也就是不是链表结构，则直接找个位置进行赋值
+                    	newTab[e.hash & (newCap - 1)] = e;
+                    	
+                    } else if (e instanceof TreeNode) { 
+                    	// 如果是红黑树
+                    	((TreeNode<K,V>)e).split(this, newTab, j, oldCap);
+                    	
+                    } else { // preserve order
                         Node<K,V> loHead = null, loTail = null;
                         Node<K,V> hiHead = null, hiTail = null;
                         Node<K,V> next;
