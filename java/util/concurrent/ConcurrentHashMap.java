@@ -671,12 +671,15 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
     /* ---------------- Static utilities -------------- */
 
     /**
-     * Spreads (XORs) higher bits of hash to lower and also forces top
-     * bit to 0. Because the table uses power-of-two masking, sets of
+     * Spreads (XORs) higher bits of hash to lower and also forces top bit to 0. <br>
+     * 异或运算将高位变成低位，并且强制高位变为 0 <br>
+     * 
+     * Because the table uses power-of-two masking, sets of
      * hashes that vary only in bits above the current mask will
-     * always collide. (Among known examples are sets of Float keys
-     * holding consecutive whole numbers in small tables.)  So we
-     * apply a transform that spreads the impact of higher bits
+     * always collide. 
+     * (Among known examples are sets of Float keys
+     * holding consecutive whole numbers in small tables.)  
+     * So we apply a transform that spreads the impact of higher bits
      * downward. There is a tradeoff between speed, utility, and
      * quality of bit-spreading. Because many common sets of hashes
      * are already reasonably distributed (so don't benefit from
@@ -807,23 +810,23 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
     private transient volatile long baseCount;
 
     /**
-     * Table initialization and resizing control.
-     * 控制数组的初始化以及扩容
+     * Table initialization and resizing control. <br>
+     * 控制数组的初始化以及扩容 <br>
      *   
-     * When negative, the table is being initialized or resized: -1 for initialization,
-     * 当为负数时，表示正在被初始化或者扩容：-1 表示初始化
+     * When negative, the table is being initialized or resized: -1 for initialization,  <br>
+     * 当为负数时，表示正在被初始化或者扩容：-1 表示初始化  <br>
      * 
-     * else -(1 + the number of active resizing threads).
-     * 或者 -( 1 + 正在扩容的线程数)
+     * else -(1 + the number of active resizing threads).  <br>
+     * 或者 -( 1 + 正在扩容的线程数)  <br>
      *   
-     * Otherwise, when table is null, holds the initial table size to use upon creation, 
-     * 否则的话，当数据为 null 时，获得数组初始时的大小以便在创建的时候使用
+     * Otherwise, when table is null, holds the initial table size to use upon creation,  <br> 
+     * 否则的话，当数据为 null 时，获得数组初始时的大小以便在创建的时候使用 <br>
      * 
-     * or 0 for default. 
-     * 或者使用 0 作为默认值
+     * or 0 for default.  <br>
+     * 或者使用 0 作为默认值 <br>
      * 
-     * After initialization, holds the next element count value upon which to resize the table.
-     * 在初始化后，保留下一个元素的计数值用于扩容
+     * After initialization, holds the next element count value upon which to resize the table. <br>
+     * 在初始化后，保留下一个元素的计数值用于扩容 <br>
      * 
      * 
      */
