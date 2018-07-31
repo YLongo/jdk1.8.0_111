@@ -199,6 +199,10 @@ class Random implements java.io.Serializable {
         long oldseed, nextseed;
         AtomicLong seed = this.seed;
         do {
+        	/*
+        	 *  获取旧种子。在多线程的情况下会获取相同的旧种子
+        	 *  因为新种子的生成算法是固定，所以多线程情况下会生成相同的随机数
+        	 */
             oldseed = seed.get();
             nextseed = (oldseed * multiplier + addend) & mask;
         } while (!seed.compareAndSet(oldseed, nextseed));

@@ -177,8 +177,16 @@ class Thread implements Runnable {
         return threadInitNumber++;
     }
 
-    /* ThreadLocal values pertaining to this thread. This map is maintained
-     * by the ThreadLocal class. */
+    /* 
+     * ThreadLocal values pertaining to this thread. <br>
+     * 与当前线程有关的 ThreadLocal 值 <br>
+     *  
+     * This map is maintained by the ThreadLocal class. <br>
+     * 该 Map 通过 ThreadLocal 类来进行维护 <br>
+     * 
+     * 之所以设置成 Map 结构，是因为每个线程可以关联多个 ThreadLocal 变量
+     * 
+     */
     ThreadLocal.ThreadLocalMap threadLocals = null;
 
     /*
@@ -416,9 +424,12 @@ class Thread implements Runnable {
                 acc != null ? acc : AccessController.getContext();
         this.target = target;
         setPriority(priority);
-        if (parent.inheritableThreadLocals != null)
-            this.inheritableThreadLocals =
-                ThreadLocal.createInheritedMap(parent.inheritableThreadLocals);
+        // 判断父线程的 inheritableThreadLocals 是否为 null
+        if (parent.inheritableThreadLocals != null) {
+        	// 将父线程中的 inheritableThreadLocals 复制一份设置到子线程中去
+        	this.inheritableThreadLocals = ThreadLocal.createInheritedMap(parent.inheritableThreadLocals);
+        }
+        
         /* Stash the specified stack size in case the VM cares */
         this.stackSize = stackSize;
 
