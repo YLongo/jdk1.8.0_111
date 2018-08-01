@@ -194,15 +194,24 @@ public class ThreadLocalRandom extends Random {
         initialized = true; // false during super() call
     }
 
-    /** The common ThreadLocalRandom */
+    /** 
+     * The common ThreadLocalRandom 
+     * 通用的 ThreadLocalRandom
+     */
     static final ThreadLocalRandom instance = new ThreadLocalRandom();
 
     /**
-     * Initialize Thread fields for the current thread.  Called only
-     * when Thread.threadLocalRandomProbe is zero, indicating that a
-     * thread local seed value needs to be generated. Note that even
-     * though the initialization is purely thread-local, we need to
-     * rely on (static) atomic generators to initialize the values.
+     * Initialize Thread fields for the current thread. <br>
+     * 初始化当前线程中的字段 <br>
+     * 
+     * Called only when Thread.threadLocalRandomProbe is zero, indicating that a
+     * thread local seed value needs to be generated. <br>
+     * 仅仅只当 Thread.threadLocalRandomProbe 的值为 0 时才调用，也就是说线程的本地种子需要被生成 <br> 
+     * 
+     * Note that even though the initialization is purely thread-local, we need to
+     * rely on (static) atomic generators to initialize the values. <br>
+     * 请注意，尽管初始化完全是本地线程的。但是我还是需要依赖静态的原子生成器去初始化值。<br>
+     * 
      */
     static final void localInit() {
         int p = probeGenerator.addAndGet(PROBE_INCREMENT);
@@ -214,13 +223,17 @@ public class ThreadLocalRandom extends Random {
     }
 
     /**
-     * Returns the current thread's {@code ThreadLocalRandom}.
-     *
+     * Returns the current thread's {@code ThreadLocalRandom}. <br>
+     * 返回当前线程的 ThreadLocalRandom
+     * 
      * @return the current thread's {@code ThreadLocalRandom}
      */
     public static ThreadLocalRandom current() {
-        if (UNSAFE.getInt(Thread.currentThread(), PROBE) == 0)
-            localInit();
+    	// 如果当前线程 threadLocalRandomProbe 变量值为 0 (默认为 0)，需要初始化种子变量
+        if (UNSAFE.getInt(Thread.currentThread(), PROBE) == 0) {
+        	localInit();
+        }
+        // 静态的，所以多个线程返回的是同一个实例
         return instance;
     }
 
@@ -1059,12 +1072,11 @@ public class ThreadLocalRandom extends Random {
         try {
             UNSAFE = sun.misc.Unsafe.getUnsafe();
             Class<?> tk = Thread.class;
-            SEED = UNSAFE.objectFieldOffset
-                (tk.getDeclaredField("threadLocalRandomSeed"));
-            PROBE = UNSAFE.objectFieldOffset
-                (tk.getDeclaredField("threadLocalRandomProbe"));
-            SECONDARY = UNSAFE.objectFieldOffset
-                (tk.getDeclaredField("threadLocalRandomSecondarySeed"));
+            // 获取 Thread 类里面 threadLocalRandomSeed 变量在 Thread 实例里面的偏移量
+            SEED = UNSAFE.objectFieldOffset(tk.getDeclaredField("threadLocalRandomSeed"));
+            
+            PROBE = UNSAFE.objectFieldOffset(tk.getDeclaredField("threadLocalRandomProbe"));
+            SECONDARY = UNSAFE.objectFieldOffset(tk.getDeclaredField("threadLocalRandomSecondarySeed"));
         } catch (Exception e) {
             throw new Error(e);
         }
