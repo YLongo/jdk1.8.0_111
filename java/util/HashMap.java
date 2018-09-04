@@ -43,6 +43,12 @@ import java.util.function.Function;
  * unsynchronized and permits nulls.)  This class makes no guarantees as to
  * the order of the map; in particular, it does not guarantee that the order
  * will remain constant over time.
+ * 
+ * <p>
+ * 
+ * Hash 表基于 Map 接口实现。提供了所有的 map 操作，并且允许 null 值以及 null 键。<br>
+ * HashMap 与 HashTable 近似的相等，除了不同步以及允许 null 之外。<br>
+ * HashMap 不保证 map 中的顺序，也不会保证随着时间的推移顺序不会改变。<br>
  *
  * <p>This implementation provides constant-time performance for the basic
  * operations (<tt>get</tt> and <tt>put</tt>), assuming the hash function
@@ -52,6 +58,12 @@ import java.util.function.Function;
  * of key-value mappings).  Thus, it's very important not to set the initial
  * capacity too high (or the load factor too low) if iteration performance is
  * important.
+ * 
+ * <p>
+ * 
+ * 如果 hash 函数可以合理的分散桶中的每个元素 (即没有 hash 碰撞)，那么get/put 操作的性能是恒定的。<br>
+ * 
+ * 
  *
  * <p>An instance of <tt>HashMap</tt> has two parameters that affect its
  * performance: <i>initial capacity</i> and <i>load factor</i>.  The
