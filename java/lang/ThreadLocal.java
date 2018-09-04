@@ -161,22 +161,28 @@ public class ThreadLocal<T> {
         ThreadLocalMap map = getMap(t);
         if (map != null) {
             ThreadLocalMap.Entry e = map.getEntry(this);
+            // 什么情况下这个 Entry 会为 null 呢? 当调用了 remove 方法
             if (e != null) {
                 @SuppressWarnings("unchecked")
                 T result = (T)e.value;
                 return result;
             }
         }
+        // 为空则初始化当前线程的 threadLocals 成员变量
         return setInitialValue();
     }
 
     /**
-     * Variant of set() to establish initialValue. Used instead
-     * of set() in case user has overridden the set() method.
+     * Variant of set() to establish initialValue. <br>
+     * set() 方法的变体，用于进行初始化 <br>
+     * 
+     * Used instead of set() in case user has overridden the set() method. <br>
+     * 不使用 set() 方法是因为用户有可能会重写该方法
      *
-     * @return the initial value
+     * @return the initial value 初始值为 null
      */
     private T setInitialValue() {
+    	// 初始化值为 null
         T value = initialValue();
         Thread t = Thread.currentThread();
         ThreadLocalMap map = getMap(t);
@@ -197,22 +203,33 @@ public class ThreadLocal<T> {
      *        this thread-local.
      */
     public void set(T value) {
+    	// 获取当前线程
         Thread t = Thread.currentThread();
+        // 以当前线程作为 key，去查找对应的线程变量
         ThreadLocalMap map = getMap(t);
         if (map != null)
             map.set(this, value);
-        else
-            createMap(t, value);
+        else {
+        	// 如果是第一次调用，则创建当前线程对应的 HashMap
+        	createMap(t, value);
+        }
     }
 
     /**
-     * Removes the current thread's value for this thread-local
-     * variable.  If this thread-local variable is subsequently
-     * {@linkplain #get read} by the current thread, its value will be
-     * reinitialized by invoking its {@link #initialValue} method,
-     * unless its value is {@linkplain #set set} by the current thread
-     * in the interim.  This may result in multiple invocations of the
-     * {@code initialValue} method in the current thread.
+     * Removes the current thread's value for this thread-local variable. 
+     * 移除当前变量的本地变量的值 <br>
+     * 
+     * If this thread-local variable is subsequently {@linkplain #get read} by the current thread, <br>
+     * 如果这个本地变量后续在当前线程中通过 get 获取 <br>
+     * 
+     * its value will be reinitialized by invoking its {@link #initialValue} method,
+     * 它的值将会通过调用 initialValue 方法来重新初始化 <br> 
+     * 
+     * unless its value is {@linkplain #set set} by the current thread in the interim. <br>
+     * 除非它的值在当前线程中通过 set 方法进行设置 <br>
+     * 
+     * This may result in multiple invocations of the {@code initialValue} method in the current thread.
+     * 这可能会导致在当前线程中多次调用 initialValue 方法
      *
      * @since 1.5
      */
@@ -235,7 +252,9 @@ public class ThreadLocal<T> {
 
     /**
      * Create the map associated with a ThreadLocal. Overridden in
-     * InheritableThreadLocal.
+     * InheritableThreadLocal. <br>
+     * 
+     * 创建一个 ThreadLocalMap
      *
      * @param t the current thread
      * @param firstValue value for the initial entry of the map
@@ -372,8 +391,12 @@ public class ThreadLocal<T> {
 
         /**
          * Construct a new map including all Inheritable ThreadLocals
-         * from given parent map. Called only by createInheritedMap.
-         *
+         * from given parent map. Called only by createInheritedMap. <br>
+         * 
+         * 构建一个新的 Map，该 Map 包括从父 Map 继承而来的所有 InheritableThreadLocal 所包含的值.
+         * 该方法只能被 createInheritedMap 所调用 (因为是关于 InheritableThreadLocal 的操作，其它方法调用会报错)
+         * 
+         * 
          * @param parentMap the map associated with parent thread.
          */
         private ThreadLocalMap(ThreadLocalMap parentMap) {
@@ -388,6 +411,7 @@ public class ThreadLocal<T> {
                     @SuppressWarnings("unchecked")
                     ThreadLocal<Object> key = (ThreadLocal<Object>) e.get();
                     if (key != null) {
+                    	// 调用 InheritableThreadLocal 重写之后的方法
                         Object value = key.childValue(e.value);
                         Entry c = new Entry(key, value);
                         int h = key.threadLocalHashCode & (len - 1);
@@ -485,7 +509,8 @@ public class ThreadLocal<T> {
         }
 
         /**
-         * Remove the entry for key.
+         * Remove the entry for key. <br>
+         * 移除 key 对应的 entry
          */
         private void remove(ThreadLocal<?> key) {
             Entry[] tab = table;
