@@ -62,8 +62,8 @@ import java.util.function.Function;
  * <p>
  * 
  * 如果 hash 函数可以合理的分散桶中的每个元素 (即没有 hash 碰撞)，那么get/put 操作的性能是恒定的。<br>
- * 
- * 
+ * 遍历集合的时间跟 HashMap "容量" (桶的数量) 以及它的大小 (key-value 映射的数量) 成比例 <br>
+ * 所以，如果遍历时的性能特别重要，那么初始容量的值不要设置的太高 (或者加载因子不要太低)
  *
  * <p>An instance of <tt>HashMap</tt> has two parameters that affect its
  * performance: <i>initial capacity</i> and <i>load factor</i>.  The
