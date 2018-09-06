@@ -273,19 +273,21 @@ class Thread implements Runnable {
 
     /**
      * A hint to the scheduler that the current thread is willing to yield
-     * its current use of a processor. 
+     * its current use of a processor.The scheduler is free to ignore this hint.
+     * <p>
+     * 
      * 提示调度器，当前的线程愿意让出它当前使用的处理器
-     * 
-     * 
-     * The scheduler is free to ignore this hint.
      * 调度器可以选择忽略这个提示
      *
-     * <p> Yield is a heuristic attempt to improve relative progression
+     * <p> 
+     * Yield is a heuristic attempt to improve relative progression
      * between threads that would otherwise over-utilise a CPU. Its use
      * should be combined with detailed profiling and benchmarking to
      * ensure that it actually has the desired effect.
+     * <p>
      *
-     * <p> It is rarely appropriate to use this method. It may be useful
+     * <p> 
+     * It is rarely appropriate to use this method. It may be useful
      * for debugging or testing purposes, where it may help to reproduce
      * bugs due to race conditions. It may also be useful when designing
      * concurrency control constructs such as the ones in the
@@ -298,6 +300,12 @@ class Thread implements Runnable {
      * execution) for the specified number of milliseconds, subject to
      * the precision and accuracy of system timers and schedulers. The thread
      * does not lose ownership of any monitors.
+     * <p>
+     * 
+     * 暂停当前线程指定的时间，根据系统定时器以及调度器的精确性与准确性<br>
+     * 当前线程不会失去它所拥有的监视器
+     * 
+     * <p>
      *
      * @param  millis
      *         the length of time to sleep in milliseconds
@@ -308,7 +316,10 @@ class Thread implements Runnable {
      * @throws  InterruptedException
      *          if any thread has interrupted the current thread. The
      *          <i>interrupted status</i> of the current thread is
-     *          cleared when this exception is thrown.
+     *          cleared when this exception is thrown. <p>
+     *          
+     *          当任何其它的线程中断该线程时。在抛出异常的时候会清除当前线程的中断状态。
+     *          
      */
     public static native void sleep(long millis) throws InterruptedException;
 
