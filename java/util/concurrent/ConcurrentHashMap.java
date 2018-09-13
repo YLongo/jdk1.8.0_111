@@ -512,7 +512,10 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
 
     /**
      * The default initial table capacity.  Must be a power of 2
-     * (i.e., at least 1) and at most MAXIMUM_CAPACITY.
+     * (i.e., at least 1) and at most MAXIMUM_CAPACITY. <br>
+     * 
+     * 默认的初始化容量为 16。必须是 2 的多少次方，最小值为 1
+     * 
      */
     private static final int DEFAULT_CAPACITY = 16;
 
@@ -671,8 +674,10 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
     /* ---------------- Static utilities -------------- */
 
     /**
-     * Spreads (XORs) higher bits of hash to lower and also forces top bit to 0. <br>
-     * 异或运算将高位变成低位，并且强制高位变为 0 <br>
+     * Spreads (XORs) higher bits of hash to lower and also forces top bit to 0.
+     * <p>
+     * 
+     * 异或运算 (相同为 0，不同为 1) 将高位变成低位，并且强制高位变为 0 <br>
      * 
      * Because the table uses power-of-two masking, sets of
      * hashes that vary only in bits above the current mask will
@@ -690,6 +695,10 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * never be used in index calculations because of table bounds.
      */
     static final int spread(int h) {
+        /*
+         * 无符号右移：无论正负，高位补 0
+         * 异或：相同为 0，不同为 1
+         */
         return (h ^ (h >>> 16)) & HASH_BITS;
     }
 
@@ -745,43 +754,37 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
     /**
      * Volatile access methods are used for table elements as well as
      * elements of in-progress next table while resizing.  
-     * Volatile 方法用于获取数组中的元素，也用于在扩容过程中获取元素
-     * 
      * All uses of the tab arguments must be null checked by callers.  
-     * 所有的 tab 参数在调用之前必须进行非空判断
-     * 
      * All callers also paranoically precheck that tab's length is not zero (or an equivalent check), 
-     * 所有的调用者必须提前检查 tab 的长度不为 0 (或者其他等价的检查) 
-     * 
      * thus ensuring that any index argument taking the form of a hash value anded with (length - 1) is a valid index.  
-     * 因此可以确保任何经过 hash & (length - 1) 操作后的索引都是有效的索引
      * 
-     * Note that, to be correct wrt arbitrary concurrency errors by users, 
-     * 请注意，为了纠正用户任意的并发错误
-     * 
-     * these checks must operate on local variables,
-     * 必须对本地变量进行检查
-     * 
+     * Note that, to be correct wrt arbitrary concurrency errors by users, these checks must operate on local variables,
      * which accounts for some odd-looking inline assignments below.
-     * 这也解释了下面了一些奇怪的内联赋值
      * 
-     * Note that calls to setTabAt always occur within locked regions,
-     * 注意，对 setTabAt 的调用总是发生在加锁的区域内
-     * 
-     * and so in principle require only release ordering, 
-     * 所以，原则上只需要释放顺序
+     * Note that calls to setTabAt always occur within locked regions, and so in principle require only release ordering, 
      * 
      * not full volatile semantics, but are currently coded as volatile writes to be conservative.
-     * 并不是完全的 volatile 语义，但是当前的代码被保守的当作 volatile 写
      * 
+     * <p>
+     * 
+     * Volatile 方法用于获取数组中的元素，也用于在扩容过程中获取元素 <br>
+     * 所有的 tab 参数在调用之前必须进行非空判断 <br>
+     * 所有的调用者必须提前检查 tab 的长度不为 0 (或者其他等价的检查) <br>
+     * 因此可以确保任何经过 hash & (length - 1) 操作后的索引都是有效的索引 <br>
+     * 这也解释了下面了一些奇怪的内联赋值 <br>
+     * 
+     * 请注意，为了纠正用户任意的并发错误 <br>
+     * 必须对本地变量进行检查 <br>
+     * 
+     * 注意，对 setTabAt 的调用总是发生在加锁的区域内 <br>
+     * 所以，原则上只需要保证释放顺序，并不需要完全的 volatile 语义，但是当前的编码被保守的当作 volatile 写
      */
     @SuppressWarnings("unchecked")
     static final <K,V> Node<K,V> tabAt(Node<K,V>[] tab, int i) {
         return (Node<K,V>)U.getObjectVolatile(tab, ((long)i << ASHIFT) + ABASE);
     }
 
-    static final <K,V> boolean casTabAt(Node<K,V>[] tab, int i,
-                                        Node<K,V> c, Node<K,V> v) {
+    static final <K,V> boolean casTabAt(Node<K,V>[] tab, int i, Node<K,V> c, Node<K,V> v) {
         return U.compareAndSwapObject(tab, ((long)i << ASHIFT) + ABASE, c, v);
     }
 
@@ -810,24 +813,21 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
     private transient volatile long baseCount;
 
     /**
-     * Table initialization and resizing control. <br>
+     * Table initialization and resizing control. 
+     * When negative, the table is being initialized or resized: -1 for initialization, 
+     * else -(1 + the number of active resizing threads). 
+     * Otherwise, when table is null, holds the initial table size to use upon creation,  
+     * or 0 for default. 
+     * After initialization, holds the next element count value upon which to resize the table. 
+     * <p>
+     * 
      * 控制数组的初始化以及扩容 <br>
-     *   
-     * When negative, the table is being initialized or resized: -1 for initialization,  <br>
+     * 
      * 当为负数时，表示正在被初始化或者扩容：-1 表示初始化  <br>
-     * 
-     * else -(1 + the number of active resizing threads).  <br>
      * 或者 -( 1 + 正在扩容的线程数)  <br>
-     *   
-     * Otherwise, when table is null, holds the initial table size to use upon creation,  <br> 
      * 否则的话，当数据为 null 时，获得数组初始时的大小以便在创建的时候使用 <br>
-     * 
-     * or 0 for default.  <br>
      * 或者使用 0 作为默认值 <br>
-     * 
-     * After initialization, holds the next element count value upon which to resize the table. <br>
      * 在初始化后，保留下一个元素的计数值用于扩容 <br>
-     * 
      * 
      */
     private transient volatile int sizeCtl;
@@ -1029,10 +1029,14 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
 
     /**
      * Maps the specified key to the specified value in this table.
-     * Neither the key nor the value can be null.
-     *
+     * Neither the key nor the value can be null. <br>
+     * 
      * <p>The value can be retrieved by calling the {@code get} method
      * with a key that is equal to the original key.
+     * 
+     * <p>
+     * 
+     * key 与 value 都不能为 null
      *
      * @param key key with which the specified value is to be associated
      * @param value value to be associated with the specified key
@@ -1044,8 +1048,15 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
         return putVal(key, value, false);
     }
 
-    /** Implementation for put and putIfAbsent */
+    /** 
+     * Implementation for put and putIfAbsent <br> 
+     * 
+     * put() 以及 putIfAbsent() 的具体实现
+     * 
+     */
     final V putVal(K key, V value, boolean onlyIfAbsent) {
+        
+        // key、value 不能为 null
         if (key == null || value == null) {
         	throw new NullPointerException();
         }
@@ -1060,12 +1071,18 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
             
             // 初始化
             if (tab == null || (n = tab.length) == 0) {
-            	tab = initTable();
+            	
+                tab = initTable();
+            	
+                // TODO 这个方法具体实现是什么意思
             } else if ((f = tabAt(tab, i = (n - 1) & hash)) == null) { // 如果该位置上没有元素
+                
+                // 如果 i 位置的值为 null，那么就新建一个 node 插入
                 if (casTabAt(tab, i, null, new Node<K,V>(hash, key, value, null))) {
                 	break;                   // no lock when adding to empty bin
                 }
             } else if ((fh = f.hash) == MOVED) {
+                // TODO resize 时帮助转移
             	tab = helpTransfer(tab, f);
             } else {
                 V oldVal = null;
@@ -1076,11 +1093,11 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                             for (Node<K,V> e = f;; ++binCount) {
                                 K ek;
                                 if (e.hash == hash &&
-                                    ((ek = e.key) == key ||
-                                     (ek != null && key.equals(ek)))) {
+                                    ((ek = e.key) == key || (ek != null && key.equals(ek)))) {
                                     oldVal = e.val;
-                                    if (!onlyIfAbsent)
+                                    if (!onlyIfAbsent) { // 仅仅只在 value 为 null 的时候才赋值
                                         e.val = value;
+                                    }
                                     break;
                                 }
                                 Node<K,V> pred = e;
@@ -2268,16 +2285,22 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
         int sc;
         
         while ((tab = table) == null || tab.length == 0) {
-            if ((sc = sizeCtl) < 0) {
-            	Thread.yield(); // lost initialization race; just spin
-            } else if (U.compareAndSwapInt(this, SIZECTL, sc, -1)) { // CAS 锁 (TODO 去了解)
+            
+            if ((sc = sizeCtl) < 0) { // 小于 0，表示正在初始化或者扩容
+                /*
+                 * 初始化失败，将机会让给其它线程去执行，自己等待 CPU 的下一次调度
+                 * 等到自己有机会接着执行的时候，发现 while 条件不满足了，就会返回已经被初始化的 tab
+                 */
+                Thread.yield(); // lost initialization race; just spin 
+            	
+            } else if (U.compareAndSwapInt(this, SIZECTL, sc, -1)) { // 如果 SIZECTL 的值为 0，那么设置为 -1 (表示正在初始化) 
                 try {
-                    if ((tab = table) == null || tab.length == 0) {
-                        int n = (sc > 0) ? sc : DEFAULT_CAPACITY;
+                    if ((tab = table) == null || tab.length == 0) { // 这个条件是不是有点多余？
+                        int n = (sc > 0) ? sc : DEFAULT_CAPACITY;   // 什么时候 n 不会等于 DEFAULT_CAPACITY？ 
                         @SuppressWarnings("unchecked")
                         Node<K,V>[] nt = (Node<K,V>[])new Node<?,?>[n];
                         table = tab = nt;
-                        sc = n - (n >>> 2);
+                        sc = n - (n >>> 2); // 这样做的原因是什么？
                     }
                 } finally {
                     sizeCtl = sc;
