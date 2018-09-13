@@ -42,7 +42,6 @@ import java.lang.reflect.Type;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -51,14 +50,11 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Spliterator;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.Function;
@@ -1064,6 +1060,8 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
         int hash = spread(key.hashCode());
         
         int binCount = 0;
+        
+        // 在多线程的情况下，可能会出现每循环一次，table 变化一次
         for (Node<K,V>[] tab = table;;) {
         	
             Node<K,V> f; 
@@ -1074,7 +1072,13 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
             	
                 tab = initTable();
             	
-                // TODO 这个方法具体实现是什么意思
+                /*
+                 * TODO i = (n - 1) & hash) 为什么要这样操作？
+                 * 
+                 * 为什么要使用 tabAt 去获取数组中的值，而不直接使用 tab[i] 来获取？
+                 *  1. 虽然将 table 直接复制给 tab，但是 tab 是不具备 volatile 语义性的
+                 *  2. 如果 tab 具有 volatile 语义性，也是需要这样操作的，因为 volatile 只能保证数组中的引用可见，但是不会保证引用所引用的值可见
+                 */
             } else if ((f = tabAt(tab, i = (n - 1) & hash)) == null) { // 如果该位置上没有元素
                 
                 // 如果 i 位置的值为 null，那么就新建一个 node 插入
