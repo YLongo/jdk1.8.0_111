@@ -43,9 +43,9 @@ import java.util.function.Function;
  * unsynchronized and permits nulls.)  This class makes no guarantees as to
  * the order of the map; in particular, it does not guarantee that the order
  * will remain constant over time.
- * 
+ *
  * <p>
- * 
+ *
  * Hash 表基于 Map 接口实现。提供了所有的 map 操作，并且允许 null 值以及 null 键。<br>
  * HashMap 与 HashTable 近似的相等，除了不同步以及允许 null 之外。<br>
  * HashMap 不保证 map 中的顺序，也不会保证随着时间的推移顺序不会改变。<br>
@@ -58,9 +58,9 @@ import java.util.function.Function;
  * of key-value mappings).  Thus, it's very important not to set the initial
  * capacity too high (or the load factor too low) if iteration performance is
  * important.
- * 
+ *
  * <p>
- * 
+ *
  * 如果 hash 函数可以合理的分散桶中的每个元素 (即没有 hash 碰撞)，那么get/put 操作的性能是恒定的。<br>
  * 遍历集合的时间跟 HashMap "容量" (桶的数量) 以及它的大小 (key-value 映射的数量) 成比例 <br>
  * 所以，如果遍历时的性能特别重要，那么初始容量的值不要设置的太高 (或者加载因子不要太低)
@@ -243,9 +243,9 @@ public class HashMap<K,V> extends AbstractMap<K,V>
 
     /**
      * The default initial capacity - MUST be a power of two. <br>
-     * 
+     *
      * 数组默认的容量为 16。<br>
-     * 这种写法可以让人一眼看明白必须是 2 的平方，就像一天是 60 * 60 * 24
+     * 这种写法可以让人一眼看明白必须是 2 的多少次方，就像一天是 60 * 60 * 24
      */
     static final int DEFAULT_INITIAL_CAPACITY = 1 << 4; // aka 16
 
@@ -347,10 +347,14 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * cheapest possible way to reduce systematic lossage, as well as
      * to incorporate impact of the highest bits that would otherwise
      * never be used in index calculations because of table bounds.
+     * <p>
      * 
      * 这是因为有些数据计算出的哈希值差异主要在高位，
      * 而 HashMap 里的哈希寻址是忽略容量以上的高位的，
-     * 那么这种处理就可以有效避免类似情况下的哈希碰撞。
+     * 那么这种处理就可以有效避免类似情况下的哈希碰撞。<br>
+     * 
+     * 在 table 的长度较小的情况下，可以保证高低位都参与到 hash 的计算当中去，同时不会有太大的开销。
+     * 
      */
     static final int hash(Object key) {
         int h;
@@ -421,6 +425,9 @@ public class HashMap<K,V> extends AbstractMap<K,V>
 
     /**
      * The number of key-value mappings contained in this map.
+     * <p>
+     *
+     * 键值对的数量
      */
     transient int size;
 
@@ -430,14 +437,18 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * the HashMap or otherwise modify its internal structure (e.g.,
      * rehash).  This field is used to make iterators on Collection-views of
      * the HashMap fail-fast.  (See ConcurrentModificationException).
+     * <p>
+     *
+     * HashMap 内部结果被修改的次数，主要用于快速迭代的失败
+     *
      */
     transient int modCount;
 
     /**
      * The next size value at which to resize (capacity * load factor).
-     * 
+     *
      * 扩容时的阀值 = 数组的容量 * 装载因子
-     * 
+     *
      * @serial
      */
     // (The javadoc description is true upon serialization.
@@ -448,9 +459,9 @@ public class HashMap<K,V> extends AbstractMap<K,V>
 
     /**
      * The load factor for the hash table.
-     * 
+     * <p>
      * 装载因子
-     * 
+     *
      * @serial
      */
     final float loadFactor;
@@ -478,7 +489,6 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         this.loadFactor = loadFactor;
         this.threshold = tableSizeFor(initialCapacity);
     }
-
     /**
      * Constructs an empty <tt>HashMap</tt> with the specified initial
      * capacity and the default load factor (0.75).
@@ -622,7 +632,10 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * Associates the specified value with the specified key in this map.
      * If the map previously contained a mapping for the key, the old
      * value is replaced.
-     *
+     * <p>
+     * 
+     * 参考：<a href="https://zhuanlan.zhihu.com/p/21673805">Java 8 系列之重新认识 HashMap</a>
+     * 
      * @param key key with which the specified value is to be associated
      * @param value value to be associated with the specified key
      * @return the previous value associated with <tt>key</tt>, or
@@ -649,26 +662,33 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      */
     final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
                    boolean evict) {
-    	
-        Node<K,V>[] tab; 
-        Node<K,V> p; 
+
+        Node<K,V>[] tab;
+        Node<K,V> p;
         int n, i;
-        
+
         // 如果是空数组
         if ((tab = table) == null || (n = tab.length) == 0) {
         	n = (tab = resize()).length;
-        } 
-        
-        // 如果当前索引处的值为空，则插入。 (n -1) & hash 的值在 0 ~ n-1 之间
+        }
+
+        /*
+         * 如果当前索引处的值为空，则插入。 (n -1) & hash 的值在 0 ~ n-1 之间
+         * 
+         * (n -1) & hash 相当与 hash % n，但是取模运算的代价比较大，这种方式在速度上更快
+         * 
+         * 但是仅仅限于 n 是 2 的次方。恰恰 HashMap 规定数组的容量必须是 2 的多少次方
+         * 
+         */
         if ((p = tab[i = (n - 1) & hash]) == null) {
         	tab[i] = newNode(hash, key, value, null);
         } else {
             Node<K,V> e; K k;
-            
-            // 存在一个相同的 key，并取出
+
+            // 存在一个相同的 key，那么取出该节点
             if (p.hash == hash && ((k = p.key) == key || (key != null && key.equals(k)))) {
             	e = p;
-            } else if (p instanceof TreeNode) { // 如果节点的类型是树形结构
+            } else if (p instanceof TreeNode) { // 如果节点的类型是树形结构 (红黑树)
             	e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);
             } else { // 如果节点为链表结构
                 for (int binCount = 0; ; ++binCount) {
@@ -692,8 +712,12 @@ public class HashMap<K,V> extends AbstractMap<K,V>
 
             // 存在一个相同的 key
             if (e != null) { // existing mapping for key
+            	
                 V oldValue = e.value;
+                
+                // onlyIfAbsent = false
                 if (!onlyIfAbsent || oldValue == null) {
+                	// 使用新值覆盖旧值
                 	e.value = value;
                 }
                 afterNodeAccess(e);
@@ -708,39 +732,39 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         if (++size > threshold) {
         	resize();
         }
-        
+
         afterNodeInsertion(evict);
-        
+
         return null;
     }
 
     /**
      * Initializes or doubles table size. <br>
      * 初始化或者将数组的容量翻倍 <br>
-     * 
+     *
      * If null, allocates in accord with initial capacity target held in field threshold.
-     * 
+     *
      * Otherwise, because we are using power-of-two expansion, the
      * elements from each bin must either stay at same index, or move
      * with a power of two offset in the new table.
-     * 
+     *
      * 初始化或者扩容
-     * 
+     *
      * @return the table
      */
     final Node<K,V>[] resize() {
-    	
+
         Node<K,V>[] oldTab = table;
-        
+
         // 当前数组的容量
         int oldCap = (oldTab == null) ? 0 : oldTab.length;
-        
+
         // 当前数组的阀值
         int oldThr = threshold;
-        
+
         int newCap, newThr = 0;
-        
-        // 如果当前数组的容量大于 0，则扩容
+
+        // 如果当前数组的容量大于 0 (因为初始化的时候容量是 0)，则进行扩容
         if (oldCap > 0) {
         	// 如果当前数据的容量大于了最大容量
         	if (oldCap >= MAXIMUM_CAPACITY) {
@@ -750,9 +774,16 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         	} else if ((newCap = oldCap << 1) < MAXIMUM_CAPACITY && oldCap >= DEFAULT_INITIAL_CAPACITY) {
         		/*
         		 * 如果当前数组的容量的平方小于最大容量 且 当前数组的容量大于默认的容量
-        		 * 
+        		 *
         		 * 则新数组容量为当前数组容量的平方
+        		 * 
         		 * 新数组容量的阀值为当前数组容量的阀值的平方
+        		 * 
+        		 * 16 * 0.75 = 12
+        		 * 32 * 0.75 = 24
+        		 *    .
+        		 *    .
+        		 * 64 * 0.75 = 48
         		 */
         		newThr = oldThr << 1; // double threshold
         	}
@@ -763,7 +794,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         	 * 但是用户自定义的容量不一定是 2 的倍数，所以 tableSizeFor 做了一层转换
         	 */
             newCap = oldThr;
-        } else {                 
+        } else {
         	/*
         	 * zero initial threshold signifies using defaults
         	 * 通过默认的容量与装载因子进行初始化，即 new HashMap() 后，第一次调用 put 方法
@@ -771,20 +802,20 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             newCap = DEFAULT_INITIAL_CAPACITY; // 16
             newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY); // 0.75 * 16 = 12
         }
-        
-        // 如果通过 new HashMap(capacity, loadFactor) 来进行初始化
+
+        // 如果通过 new HashMap(capacity) 或 new HashMap(capacity, loadFactor) 来进行初始化
         if (newThr == 0) {
             float ft = (float)newCap * loadFactor;
             newThr = (newCap < MAXIMUM_CAPACITY && ft < (float)MAXIMUM_CAPACITY ? (int)ft : Integer.MAX_VALUE);
         }
-        
+
         // 默认情况下为 16 * 0.75 = 12
         threshold = newThr;
-        
+
         @SuppressWarnings({"unchecked"})
         // 默认情况下 newCap = 16
         Node<K,V>[] newTab = (Node<K,V>[])new Node[newCap];
-        
+
         table = newTab;
 
         // 数组扩容之后的数据迁移，第一次初始化不会执行这个
@@ -792,31 +823,53 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             for (int j = 0; j < oldCap; ++j) {
                 Node<K,V> e;
                 if ((e = oldTab[j]) != null) {
-                	
+
                     oldTab[j] = null; // 将当前位置的值置为空
-                    
-                    if (e.next == null) { 
+
+                    if (e.next == null) {
                     	// 如果当前节点的 next 为空，也就是不是链表结构，则直接找个位置进行赋值
                     	newTab[e.hash & (newCap - 1)] = e;
-                    	
-                    } else if (e instanceof TreeNode) { 
+
+                    } else if (e instanceof TreeNode) {
                     	// 如果是红黑树
                     	((TreeNode<K,V>)e).split(this, newTab, j, oldCap);
+
+                    } else { // 如果是链表
+                    	/* 
+                    	 * preserve order 
+                    	 * 只可以保证，新链表中元素的顺序，跟在旧链表中顺序一致
+                         * 例如：在旧链表中元素的顺序为：123456
+                         *      那么在新数组中可能会变成两条新链表
+                         *      这两条新链表中元素的顺序可能为：123
+                         *                                456
+                         *                                
+                         *      虽然变成了两条新链表，但是新链表中元素的顺序跟之前还是一致的
+                         * 
+                     	 */
                     	
-                    } else { // preserve order
-                        Node<K,V> loHead = null, loTail = null;
+                    	// 数组索引较小位置处的链表
+                        Node<K,V> loHead = null, // 头 
+                        		  loTail = null; // 尾
+                        
+                        // 数组索引较大位置处的链表
                         Node<K,V> hiHead = null, hiTail = null;
                         Node<K,V> next;
                         do {
+                        	// 将当前元素所指向的下一个元素记录下来
                             next = e.next;
-                            if ((e.hash & oldCap) == 0) {
+                            
+                            // 通过这个中方法来判断高位是否变为了 1
+                            // 如果高位为 0，那么则将元素放到原位置
+                            // 如果改为为 1，那么则将元素放到 (原位置 + oldCap) 的位置上
+                            // 但是为什么要这么做呢？基于什么样的考虑？
+                            if ((e.hash & oldCap) == 0) { // 如果高位为 0
                                 if (loTail == null) {
-                                    loHead = e;
+                                    loHead = e;           // 将当前元素放在头部
                                 } else {
-                                    loTail.next = e;
+                                    loTail.next = e;      // 将当前元素放在链表的后面
                                 }
                                 loTail = e;
-                            } else {
+                            } else { // 如果高位为 1
                                 if (hiTail == null) {
                                     hiHead = e;
                                 } else {
@@ -825,14 +878,14 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                                 hiTail = e;
                             }
                         } while ((e = next) != null);
-                        
+
                         if (loTail != null) {
                             loTail.next = null;
-                            newTab[j] = loHead;
+                            newTab[j] = loHead;          // 新数组[原索引] (换了一家公司，但是职位还是开发)
                         }
                         if (hiTail != null) {
                             hiTail.next = null;
-                            newTab[j + oldCap] = hiHead;
+                            newTab[j + oldCap] = hiHead; // 新数组[原索引 + oldCap] (换了一家公司，但是职位变成了技术主管)
                         }
                     }
                 }
