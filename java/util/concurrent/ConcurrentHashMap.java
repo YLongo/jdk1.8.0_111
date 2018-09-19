@@ -700,6 +700,10 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
 
     /**
      * Returns a power of two table size for the given desired capacity.
+     * <p>
+     * 
+     * 将给定的值变成 2 的多少次方 
+     * 
      * See Hackers Delight, sec 3.2
      */
     private static final int tableSizeFor(int c) {
@@ -1073,8 +1077,6 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                 tab = initTable();
             	
                 /*
-                 * TODO i = (n - 1) & hash) 为什么要这样操作？
-                 * 
                  * 为什么要使用 tabAt 去获取数组中的值，而不直接使用 tab[i] 来获取？
                  *  1. 虽然将 table 直接复制给 tab，但是 tab 是不具备 volatile 语义性的
                  *  2. 如果 tab 具有 volatile 语义性，也是需要这样操作的，因为 volatile 只能保证数组中的引用可见，但是不会保证引用所引用的值可见
@@ -1090,12 +1092,13 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
             	tab = helpTransfer(tab, f);
             } else {
                 V oldVal = null;
-                synchronized (f) {
+                synchronized (f) { // 既然使用了 CAS，为什么还要加锁?
                     if (tabAt(tab, i) == f) {
-                        if (fh >= 0) {
+                        if (fh >= 0) { // 这个条件是为了保证什么？
                             binCount = 1;
                             for (Node<K,V> e = f;; ++binCount) {
                                 K ek;
+                                // 已经存在一个同样的 key
                                 if (e.hash == hash &&
                                     ((ek = e.key) == key || (ek != null && key.equals(ek)))) {
                                     oldVal = e.val;
@@ -1105,16 +1108,16 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                                     break;
                                 }
                                 Node<K,V> pred = e;
+                                // 在链表后插入新的 key
                                 if ((e = e.next) == null) {
                                     pred.next = new Node<K,V>(hash, key, value, null);
                                     break;
                                 }
                             }
-                        } else if (f instanceof TreeBin) {
+                        } else if (f instanceof TreeBin) { // 如果是节点是树形结构，表明链表已经树化
                             Node<K,V> p;
                             binCount = 2;
-                            if ((p = ((TreeBin<K,V>)f).putTreeVal(hash, key,
-                                                           value)) != null) {
+                            if ((p = ((TreeBin<K,V>)f).putTreeVal(hash, key, value)) != null) {
                                 oldVal = p.val;
                                 if (!onlyIfAbsent)
                                     p.val = value;
@@ -2392,13 +2395,16 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * @param size number of elements (doesn't need to be perfectly accurate)
      */
     private final void tryPresize(int size) {
-        int c = (size >= (MAXIMUM_CAPACITY >>> 1)) ? MAXIMUM_CAPACITY :
-            tableSizeFor(size + (size >>> 1) + 1);
+        
+        int c = (size >= (MAXIMUM_CAPACITY >>> 1)) ? MAXIMUM_CAPACITY : tableSizeFor(size + (size >>> 1) + 1);
+        
         int sc;
-        while ((sc = sizeCtl) >= 0) {
+        while ((sc = sizeCtl) >= 0) { // 没有在扩容或者初始化
             Node<K,V>[] tab = table; int n;
+            
             if (tab == null || (n = tab.length) == 0) {
                 n = (sc > c) ? sc : c;
+                
                 if (U.compareAndSwapInt(this, SIZECTL, sc, -1)) {
                     try {
                         if (table == tab) {
@@ -2411,23 +2417,22 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                         sizeCtl = sc;
                     }
                 }
-            }
-            else if (c <= sc || n >= MAXIMUM_CAPACITY)
+            } else if (c <= sc || n >= MAXIMUM_CAPACITY) {
                 break;
-            else if (tab == table) {
+            } else if (tab == table) {
                 int rs = resizeStamp(n);
-                if (sc < 0) {
+                if (sc < 0) { // 表示正在扩容或者初始化
                     Node<K,V>[] nt;
                     if ((sc >>> RESIZE_STAMP_SHIFT) != rs || sc == rs + 1 ||
                         sc == rs + MAX_RESIZERS || (nt = nextTable) == null ||
                         transferIndex <= 0)
                         break;
-                    if (U.compareAndSwapInt(this, SIZECTL, sc, sc + 1))
+                    if (U.compareAndSwapInt(this, SIZECTL, sc, sc + 1)) {
                         transfer(tab, nt);
-                }
-                else if (U.compareAndSwapInt(this, SIZECTL, sc,
-                                             (rs << RESIZE_STAMP_SHIFT) + 2))
+                    }
+                } else if (U.compareAndSwapInt(this, SIZECTL, sc, (rs << RESIZE_STAMP_SHIFT) + 2)) {
                     transfer(tab, null);
+                }
             }
         }
     }
@@ -2683,9 +2688,9 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
     private final void treeifyBin(Node<K,V>[] tab, int index) {
         Node<K,V> b; int n, sc;
         if (tab != null) {
-            if ((n = tab.length) < MIN_TREEIFY_CAPACITY)
+            if ((n = tab.length) < MIN_TREEIFY_CAPACITY) {
                 tryPresize(n << 1);
-            else if ((b = tabAt(tab, index)) != null && b.hash >= 0) {
+            } else if ((b = tabAt(tab, index)) != null && b.hash >= 0) {
                 synchronized (b) {
                     if (tabAt(tab, index) == b) {
                         TreeNode<K,V> hd = null, tl = null;
