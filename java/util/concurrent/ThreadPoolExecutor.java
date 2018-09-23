@@ -542,9 +542,9 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
 
     /**
      * The default rejected execution handler
+     * 默认的拒绝策略
      */
-    private static final RejectedExecutionHandler defaultHandler =
-        new AbortPolicy();
+    private static final RejectedExecutionHandler defaultHandler = new AbortPolicy();
 
     /**
      * Permission required for callers of shutdown and shutdownNow.
@@ -1183,11 +1183,18 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      *        the core, this is the maximum time that excess idle threads
      *        will wait for new tasks before terminating. <p>
      *        
+     *        当线程数超过指定的核心线程数时，超出部分的线程允许空闲的时间
      *        
-     * @param unit the time unit for the {@code keepAliveTime} argument
+     * @param unit the time unit for the {@code keepAliveTime} argument <p>
+     * 
+     * 		  keepAliveTime 的时间单位
+     * 
      * @param workQueue the queue to use for holding tasks before they are
      *        executed.  This queue will hold only the {@code Runnable}
-     *        tasks submitted by the {@code execute} method.
+     *        tasks submitted by the {@code execute} method. <p>
+     *        
+     *        任务被执行前存放在 workQueue 中。只有调用了 execute 方法的任务才会被放在这里。
+     *        
      * @throws IllegalArgumentException if one of the following holds:<br>
      *         {@code corePoolSize < 0}<br>
      *         {@code keepAliveTime < 0}<br>
@@ -1200,8 +1207,8 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
                               long keepAliveTime,
                               TimeUnit unit,
                               BlockingQueue<Runnable> workQueue) {
-        this(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue,
-             Executors.defaultThreadFactory(), defaultHandler);
+    	
+        this(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, Executors.defaultThreadFactory(), defaultHandler);
     }
 
     /**
@@ -1308,13 +1315,19 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
                               BlockingQueue<Runnable> workQueue,
                               ThreadFactory threadFactory,
                               RejectedExecutionHandler handler) {
+    	
         if (corePoolSize < 0 ||
             maximumPoolSize <= 0 ||
             maximumPoolSize < corePoolSize ||
-            keepAliveTime < 0)
-            throw new IllegalArgumentException();
-        if (workQueue == null || threadFactory == null || handler == null)
-            throw new NullPointerException();
+            keepAliveTime < 0) {
+
+        	throw new IllegalArgumentException();
+        }
+        
+        if (workQueue == null || threadFactory == null || handler == null) {
+        	throw new NullPointerException();
+        }
+        
         this.corePoolSize = corePoolSize;
         this.maximumPoolSize = maximumPoolSize;
         this.workQueue = workQueue;
