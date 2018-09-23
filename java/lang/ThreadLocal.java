@@ -95,6 +95,11 @@ public class ThreadLocal<T> {
      * The difference between successively generated hash codes - turns
      * implicit sequential thread-local IDs into near-optimally spread
      * multiplicative hash values for power-of-two-sized tables.
+     * <p>
+     * 
+     * 与斐波那契数列有关，0x61c88647 = (int)((long)((Math.sqrt(5)-1) * (1L << 31)))
+     * <br>
+     * Java 底层开发的都是大佬，惹不起  -_-
      */
     private static final int HASH_INCREMENT = 0x61c88647;
 
@@ -205,12 +210,17 @@ public class ThreadLocal<T> {
     public void set(T value) {
     	// 获取当前线程
         Thread t = Thread.currentThread();
-        // 以当前线程作为 key，去查找对应的线程变量
+        /* 以当前线程作为 key，去查找对应的线程变量
+         * InheritableThreadLocal 重写了这个方法
+         */
         ThreadLocalMap map = getMap(t);
         if (map != null)
             map.set(this, value);
         else {
-        	// 如果是第一次调用，则创建当前线程对应的 HashMap
+        	/*
+        	 *  如果是第一次调用，则创建当前线程对应的 HashMap
+        	 *  InheritableThreadLocal 重写了该方法
+        	 */
         	createMap(t, value);
         }
     }
@@ -342,6 +352,9 @@ public class ThreadLocal<T> {
         /**
          * The table, resized as necessary.
          * table.length MUST always be a power of two.
+         * <p>
+         * 
+         * 数组的长度必须是 2 的多少次方
          */
         private Entry[] table;
 
