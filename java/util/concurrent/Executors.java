@@ -86,9 +86,12 @@ public class Executors {
      * @throws IllegalArgumentException if {@code nThreads <= 0}
      */
     public static ExecutorService newFixedThreadPool(int nThreads) {
-        return new ThreadPoolExecutor(nThreads, nThreads,
-                                      0L, TimeUnit.MILLISECONDS,
-                                      new LinkedBlockingQueue<Runnable>());
+        return new ThreadPoolExecutor(nThreads, 						  // int corePoolSize,    核心线程池的数量 
+        							  nThreads, 						  // int maximumPoolSize, 最大线程池的数量
+                                      0L,                             	  // long keepAliveTime,  最大存活时间
+                                      TimeUnit.MILLISECONDS,              // TimeUnit unit,       时间单位
+                                      new LinkedBlockingQueue<Runnable>() // BlockingQueue<Runnable> workQueue 线程工作队列 
+                                     ); 
     }
 
     /**

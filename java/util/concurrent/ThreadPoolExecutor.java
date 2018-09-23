@@ -1170,12 +1170,20 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      * methods instead of this general purpose constructor.
      *
      * @param corePoolSize the number of threads to keep in the pool, even
-     *        if they are idle, unless {@code allowCoreThreadTimeOut} is set
+     *        if they are idle, unless {@code allowCoreThreadTimeOut} is set <p>
+     *        
+     *        线程池中允许存活的核心线程数。即使是处于空闲状态也会存活，除非设置了 allowCoreThreadTimeOut 
+     *        
      * @param maximumPoolSize the maximum number of threads to allow in the
-     *        pool
+     *        pool <p>
+     *        
+     *        线程池中允许存活的最大线程数。
+     *        
      * @param keepAliveTime when the number of threads is greater than
      *        the core, this is the maximum time that excess idle threads
-     *        will wait for new tasks before terminating.
+     *        will wait for new tasks before terminating. <p>
+     *        
+     *        
      * @param unit the time unit for the {@code keepAliveTime} argument
      * @param workQueue the queue to use for holding tasks before they are
      *        executed.  This queue will hold only the {@code Runnable}
