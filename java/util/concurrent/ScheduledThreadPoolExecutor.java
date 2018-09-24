@@ -427,8 +427,12 @@ public class ScheduledThreadPoolExecutor
      * @throws IllegalArgumentException if {@code corePoolSize < 0}
      */
     public ScheduledThreadPoolExecutor(int corePoolSize) {
-        super(corePoolSize, Integer.MAX_VALUE, 0, NANOSECONDS,
-              new DelayedWorkQueue());
+        super(corePoolSize,          // 
+        	  Integer.MAX_VALUE,     // 最大线程数量
+        	  0,                     // 空闲即销毁
+        	  NANOSECONDS,           // 时间单位为纳秒
+              new DelayedWorkQueue() //
+             );
     }
 
     /**
@@ -525,11 +529,12 @@ public class ScheduledThreadPoolExecutor
     public ScheduledFuture<?> schedule(Runnable command,
                                        long delay,
                                        TimeUnit unit) {
-        if (command == null || unit == null)
-            throw new NullPointerException();
-        RunnableScheduledFuture<?> t = decorateTask(command,
-            new ScheduledFutureTask<Void>(command, null,
-                                          triggerTime(delay, unit)));
+        if (command == null || unit == null) {
+        	throw new NullPointerException();
+        }
+        
+        RunnableScheduledFuture<?> t = decorateTask(command, new ScheduledFutureTask<Void>(command, null, triggerTime(delay, unit)));
+        
         delayedExecute(t);
         return t;
     }
@@ -804,10 +809,12 @@ public class ScheduledThreadPoolExecutor
     /**
      * Specialized delay queue. To mesh with TPE declarations, this
      * class must be declared as a BlockingQueue<Runnable> even though
-     * it can only hold RunnableScheduledFutures.
+     * it can only hold RunnableScheduledFutures. <p>
+     * 
+     * 延迟队列
+     * 
      */
-    static class DelayedWorkQueue extends AbstractQueue<Runnable>
-        implements BlockingQueue<Runnable> {
+    static class DelayedWorkQueue extends AbstractQueue<Runnable> implements BlockingQueue<Runnable> {
 
         /*
          * A DelayedWorkQueue is based on a heap-based data structure

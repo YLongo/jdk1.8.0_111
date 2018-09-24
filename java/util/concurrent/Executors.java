@@ -223,7 +223,7 @@ public class Executors {
         							  Integer.MAX_VALUE,               // 最大线程数
                                       60L,                             // 存活时间为 60 秒
                                       TimeUnit.SECONDS,				   // 时间单位为秒
-                                      new SynchronousQueue<Runnable>() // 
+                                      new SynchronousQueue<Runnable>() // 默认为非公平的队列 (不是先到先执行) 
                                      );
     }
 
