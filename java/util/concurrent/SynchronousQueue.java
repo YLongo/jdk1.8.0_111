@@ -859,7 +859,10 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
      * Creates a {@code SynchronousQueue} with the specified fairness policy.
      *
      * @param fair if true, waiting threads contend in FIFO order for
-     *        access; otherwise the order is unspecified.
+     *        access; otherwise the order is unspecified. <p>
+     *        
+     *        如果为 true，则等待的线程按照 FIFO 的方式执行。否则的话则是无序的。
+     *        
      */
     public SynchronousQueue(boolean fair) {
         transferer = fair ? new TransferQueue<E>() : new TransferStack<E>();
