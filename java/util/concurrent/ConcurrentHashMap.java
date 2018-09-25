@@ -1083,8 +1083,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
             	
                 /*
                  * 为什么要使用 tabAt 去获取数组中的值，而不直接使用 tab[i] 来获取？
-                 *  1. 虽然将 table 直接复制给 tab，但是 tab 是不具备 volatile 语义性的
-                 *  2. 如果 tab 具有 volatile 语义性，也是需要这样操作的，因为 volatile 只能保证数组中的引用可见，但是不会保证引用所引用的值可见
+                 *   如果 tab 具有 volatile 语义性，也是需要这样操作的，因为 volatile 只能保证数组中的引用可见，但是不会保证引用所引用的值可见
                  */
             } else if ((f = tabAt(tab, i = (n - 1) & hash)) == null) { // 如果该位置上没有元素
                 
@@ -2348,6 +2347,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
     private final void addCount(long x, int check) {
         
         CounterCell[] as; long b, s;
+        
         if ((as = counterCells) != null || 
                 !U.compareAndSwapLong(this, BASECOUNT, b = baseCount, s = b + x)) {
             CounterCell a; long v; int m;
