@@ -78,7 +78,9 @@ import java.util.stream.Stream;
  * and there is <em>not</em> any support for locking the entire table
  * in a way that prevents all access.  This class is fully
  * interoperable with {@code Hashtable} in programs that rely on its
- * thread safety but not on its synchronization details.
+ * thread safety but not on its synchronization details. <p>
+ * 
+ * 支持跟 Hashtable 完全一样的功能，但是同步细节不一样。
  *
  * <p>Retrieval operations (including {@code get}) generally do not
  * block, so may overlap with update operations (including {@code put}
