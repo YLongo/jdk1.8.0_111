@@ -101,8 +101,10 @@ import java.util.stream.Stream;
  * useful only when a map is not undergoing concurrent updates in other threads.
  * Otherwise the results of these methods reflect transient states
  * that may be adequate for monitoring or estimation purposes, but not
- * for program control.
- *
+ * for program control. <p>
+ * 
+ * 检索与更新 (插入或移除) 操作可以同时存在，并且不会有 ConcurrentModificationException
+ * 
  * <p>The table is dynamically expanded when there are too many
  * collisions (i.e., keys that have distinct hash codes but fall into
  * the same slot modulo the table size), with the expected average
@@ -143,7 +145,9 @@ import java.util.stream.Stream;
  * interfaces.
  *
  * <p>Like {@link Hashtable} but unlike {@link HashMap}, this class
- * does <em>not</em> allow {@code null} to be used as a key or value.
+ * does <em>not</em> allow {@code null} to be used as a key or value. <p>
+ * 
+ * 跟 HashTable 一样，不允许 null 的 key 与 value
  *
  * <p>ConcurrentHashMaps support a set of sequential and parallel bulk
  * operations that, unlike most {@link Stream} methods, are designed
@@ -159,8 +163,10 @@ import java.util.stream.Stream;
  * other objects or values that may transiently change while
  * computation is in progress; and except for forEach actions, should
  * ideally be side-effect-free. Bulk operations on {@link java.util.Map.Entry}
- * objects do not support method {@code setValue}.
- *
+ * objects do not support method {@code setValue}. <p>
+ * 
+ * 支持顺序或者并行的批量操作，并且不会有并发问题
+ * 
  * <ul>
  * <li> forEach: Perform a given action on each element.
  * A variant form applies a given transformation on each element
@@ -169,8 +175,10 @@ import java.util.stream.Stream;
  * <li> search: Return the first available non-null result of
  * applying a given function on each element; skipping further
  * search when a result is found.</li>
- *
- * <li> reduce: Accumulate each element.  The supplied reduction
+ *  
+ *  根据给定的 function 进行查找，查找到就会返回，不会继续再查找下去
+ * 
+ * <p><li> reduce: Accumulate each element.  The supplied reduction
  * function cannot rely on ordering (more formally, it should be
  * both associative and commutative).  There are five variants:
  *
