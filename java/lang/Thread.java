@@ -230,7 +230,9 @@ class Thread implements Runnable {
      * The argument supplied to the current call to
      * java.util.concurrent.locks.LockSupport.park.
      * Set by (private) java.util.concurrent.locks.LockSupport.setBlocker
-     * Accessed using java.util.concurrent.locks.LockSupport.getBlocker
+     * Accessed using java.util.concurrent.locks.LockSupport.getBlocker <p>
+     * 
+     * 用来接收当前线程调用 park() 方法时传递的 blocker 对象
      */
     volatile Object parkBlocker;
 
