@@ -82,13 +82,23 @@ public class LongAdder extends Striped64 implements Serializable {
      * @param x the value to add
      */
     public void add(long x) {
-        Cell[] as; long b, v; int m; Cell a;
-        if ((as = cells) != null || !casBase(b = base, b + x)) {
+        Cell[] as; 
+        long b, v; 
+        int m; 
+        Cell a;
+        
+        if ((as = cells) != null 
+        		|| !casBase(b = base, b + x)) { // 设置 base 的值
+        	
             boolean uncontended = true;
-            if (as == null || (m = as.length - 1) < 0 ||
-                (a = as[getProbe() & m]) == null ||
-                !(uncontended = a.cas(v = a.value, v + x)))
-                longAccumulate(x, null, uncontended);
+            
+            if (as == null 
+            		|| (m = as.length - 1) < 0 
+            		|| (a = as[getProbe() & m]) == null 
+            		|| !(uncontended = a.cas(v = a.value, v + x))) {
+
+            	longAccumulate(x, null, uncontended);
+            }
         }
     }
 
@@ -111,12 +121,18 @@ public class LongAdder extends Striped64 implements Serializable {
      * atomic snapshot; invocation in the absence of concurrent
      * updates returns an accurate result, but concurrent updates that
      * occur while the sum is being calculated might not be
-     * incorporated.
+     * incorporated. <p>
+     * 
+     * 返回当前的值。
+     * 返回值并不是一个原子快照。
+     * 在非并发的情况下，返回的是一个精确的值。
+     * 但是在并发更新的情况下，则不是。
      *
      * @return the sum
      */
     public long sum() {
-        Cell[] as = cells; Cell a;
+        Cell[] as = cells; 
+        Cell a;
         long sum = base;
         if (as != null) {
             for (int i = 0; i < as.length; ++i) {
@@ -132,10 +148,14 @@ public class LongAdder extends Striped64 implements Serializable {
      * be a useful alternative to creating a new adder, but is only
      * effective if there are no concurrent updates.  Because this
      * method is intrinsically racy, it should only be used when it is
-     * known that no threads are concurrently updating.
+     * known that no threads are concurrently updating. <p>
+     * 
+     * 重置当前值为 0。但是只是在非并发的情况下有效，在并发的情况下则不能保证最后的结果为 0。
+     * 
      */
     public void reset() {
-        Cell[] as = cells; Cell a;
+        Cell[] as = cells; 
+        Cell a;
         base = 0L;
         if (as != null) {
             for (int i = 0; i < as.length; ++i) {
@@ -151,7 +171,9 @@ public class LongAdder extends Striped64 implements Serializable {
      * points between multithreaded computations.  If there are
      * updates concurrent with this method, the returned value is
      * <em>not</em> guaranteed to be the final value occurring before
-     * the reset.
+     * the reset. <p>
+     * 
+     * 在返回当前值之后就将当前值设置为 0。
      *
      * @return the sum
      */

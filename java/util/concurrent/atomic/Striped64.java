@@ -117,9 +117,15 @@ abstract class Striped64 extends Number {
      * JVM intrinsics note: It would be possible to use a release-only
      * form of CAS here, if it were provided.
      */
-    @sun.misc.Contended static final class Cell {
+    @sun.misc.Contended // 防止出现伪共享
+    static final class Cell {
+    	
         volatile long value;
-        Cell(long x) { value = x; }
+        
+        Cell(long x) { 
+        	value = x; 
+        }
+        
         final boolean cas(long cmp, long val) {
             return UNSAFE.compareAndSwapLong(this, valueOffset, cmp, val);
         }
@@ -245,13 +251,11 @@ abstract class Striped64 extends Number {
                         }
                     }
                     collide = false;
-                }
-                else if (!wasUncontended)       // CAS already known to fail
-                    wasUncontended = true;      // Continue after rehash
-                else if (a.cas(v = a.value, ((fn == null) ? v + x :
-                                             fn.applyAsLong(v, x))))
-                    break;
-                else if (n >= NCPU || cells != as)
+                } else if (!wasUncontended) { // CAS already known to fail
+                	wasUncontended = true;    // Continue after rehash
+                } else if (a.cas(v = a.value, ((fn == null) ? v + x : fn.applyAsLong(v, x)))) { // 如果 fn == null 表示的是使用 LongAdder
+                	break;
+                } else if (n >= NCPU || cells != as)
                     collide = false;            // At max size or stale
                 else if (!collide)
                     collide = true;
