@@ -602,9 +602,9 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
     /*
      * Encodings for Node hash fields. See above for explanation.
      */
-    static final int MOVED     = -1; // hash for forwarding nodes
-    static final int TREEBIN   = -2; // hash for roots of trees
-    static final int RESERVED  = -3; // hash for transient reservations
+    static final int MOVED     = -1; // hash for forwarding nodes 表示 forwardingNode 节点
+    static final int TREEBIN   = -2; // hash for roots of trees   表示树的根节点
+    static final int RESERVED  = -3; // hash for transient reservations 临时保留值
     
     /*
      * 0111 1111 1111 1111 1111 1111 1111 1111
@@ -647,32 +647,48 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
 
         public final K getKey()       { return key; }
         public final V getValue()     { return val; }
-        public final int hashCode()   { return key.hashCode() ^ val.hashCode(); }
+        
+        /**
+         * key 与 value 的异或运算 (相同为 0，不同为 1) 
+         */
+        public final int hashCode() { 
+            return key.hashCode() ^ val.hashCode(); 
+        }
+        
         public final String toString(){ return key + "=" + val; }
+        
+        /*
+         * 不能直接改变值
+         * 既然不能直接改变值，为什么不直接不要这方法，或者设置为 private？
+         * 因为是实现的接口，所以这个方法必须要有，而且访问权限必须比父方法要高
+         */
         public final V setValue(V value) {
             throw new UnsupportedOperationException();
         }
 
         public final boolean equals(Object o) {
             Object k, v, u; Map.Entry<?,?> e;
-            return ((o instanceof Map.Entry) &&
-                    (k = (e = (Map.Entry<?,?>)o).getKey()) != null &&
-                    (v = e.getValue()) != null &&
-                    (k == key || k.equals(key)) &&
-                    (v == (u = val) || v.equals(u)));
+            return ((o instanceof Map.Entry) 
+                    && (k = (e = (Map.Entry<?,?>)o).getKey()) != null 
+                    && (v = e.getValue()) != null 
+                    && (k == key || k.equals(key)) 
+                    && (v == (u = val) || v.equals(u)));
         }
 
         /**
-         * Virtualized support for map.get(); overridden in subclasses.
+         * Virtualized support for map.get(); overridden in subclasses. <p>
+         * 对 map.get() 方法进行虚拟支持 (支持就支持，什么叫虚拟支持？费解 -_-)
+         * 
          */
         Node<K,V> find(int h, Object k) {
             Node<K,V> e = this;
             if (k != null) {
                 do {
                     K ek;
-                    if (e.hash == h &&
-                        ((ek = e.key) == k || (ek != null && k.equals(ek))))
+                    if (e.hash == h 
+                            && ((ek = e.key) == k || (ek != null && k.equals(ek)))) {
                         return e;
+                    }
                 } while ((e = e.next) != null);
             }
             return null;
@@ -783,7 +799,6 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * 所有的 tab 参数在调用之前必须进行非空判断 <br>
      * 所有的调用者必须提前检查 tab 的长度不为 0 (或者其他等价的检查) <br>
      * 因此可以确保任何经过 hash & (length - 1) 操作后的索引都是有效的索引 <br>
-     * 这也解释了下面了一些奇怪的内联赋值 <br>
      * 
      * 请注意，为了纠正用户任意的并发错误 <br>
      * 必须对本地变量进行检查 <br>
@@ -814,7 +829,8 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
     transient volatile Node<K,V>[] table;
 
     /**
-     * The next table to use; non-null only while resizing.
+     * The next table to use; non-null only while resizing. <p>
+     * 扩容时使用
      */
     private transient volatile Node<K,V>[] nextTable;
 
@@ -846,17 +862,20 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
     private transient volatile int sizeCtl;
 
     /**
-     * The next table index (plus one) to split while resizing.
+     * The next table index (plus one) to split while resizing. <p>
+     * 在扩容时，在下一个索引 + 1 的位置进行拆分
      */
     private transient volatile int transferIndex;
 
     /**
-     * Spinlock (locked via CAS) used when resizing and/or creating CounterCells.
+     * Spinlock (locked via CAS) used when resizing and/or creating CounterCells. <p>
+     * 扩容或者新建 CounterCells 时的自旋锁
      */
     private transient volatile int cellsBusy;
 
     /**
-     * Table of counter cells. When non-null, size is a power of 2.
+     * Table of counter cells. When non-null, size is a power of 2. <p>
+     * 不为空时，大小为 2 的幂
      */
     private transient volatile CounterCell[] counterCells;
 
@@ -1110,7 +1129,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                  */
                 synchronized (f) { // 对第一节点进行加锁。
                     if (tabAt(tab, i) == f) {
-                        if (fh >= 0) { // 这个条件是为了保证什么？
+                        if (fh >= 0) { // 为什么这个条件可以保证是链表结构？
                             binCount = 1;
                             for (Node<K,V> e = f;; ++binCount) {
                                 K ek;
@@ -1135,8 +1154,9 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                             binCount = 2;
                             if ((p = ((TreeBin<K,V>)f).putTreeVal(hash, key, value)) != null) {
                                 oldVal = p.val;
-                                if (!onlyIfAbsent)
+                                if (!onlyIfAbsent) {
                                     p.val = value;
+                                }
                             }
                         }
                     }
@@ -2246,7 +2266,8 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
     /* ---------------- Special Nodes -------------- */
 
     /**
-     * A node inserted at head of bins during transfer operations.
+     * A node inserted at head of bins during transfer operations. <p>
+     * 在 transfer 操作中，在 bin 的头部插入
      */
     static final class ForwardingNode<K,V> extends Node<K,V> {
         final Node<K,V>[] nextTable;
@@ -2259,24 +2280,27 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
             // loop to avoid arbitrarily deep recursion on forwarding nodes
             outer: for (Node<K,V>[] tab = nextTable;;) {
                 Node<K,V> e; int n;
-                if (k == null || tab == null || (n = tab.length) == 0 ||
-                    (e = tabAt(tab, (n - 1) & h)) == null)
+                if (k == null || tab == null || (n = tab.length) == 0 
+                        || (e = tabAt(tab, (n - 1) & h)) == null) {
                     return null;
+                }
                 for (;;) {
                     int eh; K ek;
-                    if ((eh = e.hash) == h &&
-                        ((ek = e.key) == k || (ek != null && k.equals(ek))))
+                    if ((eh = e.hash) == h 
+                            && ((ek = e.key) == k || (ek != null && k.equals(ek)))) {
                         return e;
+                    }
                     if (eh < 0) {
                         if (e instanceof ForwardingNode) {
                             tab = ((ForwardingNode<K,V>)e).nextTable;
                             continue outer;
-                        }
-                        else
+                        } else {
                             return e.find(h, k);
+                        }
                     }
-                    if ((e = e.next) == null)
+                    if ((e = e.next) == null) {
                         return null;
+                    }
                 }
             }
         }
@@ -2347,8 +2371,6 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * because resizings are lagging additions.
      * <p>
      * 
-     * TODO 这个方法看的我菊疼，来日再战，先不死扣细节
-     * 
      * @param x the count to add
      * @param check if <0, don't check resize, if <= 1 only check if uncontended
      */
@@ -2395,18 +2417,28 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
     }
 
     /**
-     * Helps transfer if a resize is in progress.
+     * Helps transfer if a resize is in progress. <p>
+     * 如果正在扩容，则帮助进行扩容
      */
     final Node<K,V>[] helpTransfer(Node<K,V>[] tab, Node<K,V> f) {
         Node<K,V>[] nextTab; int sc;
-        if (tab != null && (f instanceof ForwardingNode) &&
-            (nextTab = ((ForwardingNode<K,V>)f).nextTable) != null) {
+        if (tab != null 
+                && (f instanceof ForwardingNode) 
+                && (nextTab = ((ForwardingNode<K,V>)f).nextTable) != null) {
+            
             int rs = resizeStamp(tab.length);
-            while (nextTab == nextTable && table == tab &&
-                   (sc = sizeCtl) < 0) {
-                if ((sc >>> RESIZE_STAMP_SHIFT) != rs || sc == rs + 1 ||
-                    sc == rs + MAX_RESIZERS || transferIndex <= 0)
+            
+            while (nextTab == nextTable 
+                    && table == tab 
+                    && (sc = sizeCtl) < 0) {
+                
+                if ((sc >>> RESIZE_STAMP_SHIFT) != rs 
+                        || sc == rs + 1 
+                        || sc == rs + MAX_RESIZERS 
+                        || transferIndex <= 0) {
+
                     break;
+                }
                 if (U.compareAndSwapInt(this, SIZECTL, sc, sc + 1)) {
                     transfer(tab, nextTab);
                     break;
@@ -2468,15 +2500,19 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
 
     /**
      * Moves and/or copies the nodes in each bin to new table. See
-     * above for explanation.
+     * above for explanation. <p>
+     * 将每个 bin 中的 node 移动或者复制到新数组中
      */
     private final void transfer(Node<K,V>[] tab, Node<K,V>[] nextTab) {
         int n = tab.length, stride;
-        if ((stride = (NCPU > 1) ? (n >>> 3) / NCPU : n) < MIN_TRANSFER_STRIDE)
+        
+        if ((stride = (NCPU > 1) ? (n >>> 3) / NCPU : n) < MIN_TRANSFER_STRIDE) {
             stride = MIN_TRANSFER_STRIDE; // subdivide range
+        }
         if (nextTab == null) {            // initiating
             try {
                 @SuppressWarnings("unchecked")
+                // 新建一个 数组对象，容量为原来的两倍
                 Node<K,V>[] nt = (Node<K,V>[])new Node<?,?>[n << 1];
                 nextTab = nt;
             } catch (Throwable ex) {      // try to cope with OOME
@@ -2492,18 +2528,20 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
         boolean finishing = false; // to ensure sweep before committing nextTab
         for (int i = 0, bound = 0;;) {
             Node<K,V> f; int fh;
+            
             while (advance) {
+                
                 int nextIndex, nextBound;
-                if (--i >= bound || finishing)
+                
+                if (--i >= bound || finishing) {
                     advance = false;
-                else if ((nextIndex = transferIndex) <= 0) {
+                } else if ((nextIndex = transferIndex) <= 0) {
                     i = -1;
                     advance = false;
-                }
-                else if (U.compareAndSwapInt
-                         (this, TRANSFERINDEX, nextIndex,
-                          nextBound = (nextIndex > stride ?
-                                       nextIndex - stride : 0))) {
+                } else if (U.compareAndSwapInt(this, 
+                        TRANSFERINDEX, 
+                        nextIndex, 
+                        nextBound = (nextIndex > stride ? nextIndex - stride : 0))) {
                     bound = nextBound;
                     i = nextIndex - 1;
                     advance = false;
@@ -2518,17 +2556,18 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                     return;
                 }
                 if (U.compareAndSwapInt(this, SIZECTL, sc = sizeCtl, sc - 1)) {
-                    if ((sc - 2) != resizeStamp(n) << RESIZE_STAMP_SHIFT)
+                    
+                    if ((sc - 2) != resizeStamp(n) << RESIZE_STAMP_SHIFT) {
                         return;
+                    }
                     finishing = advance = true;
                     i = n; // recheck before commit
                 }
-            }
-            else if ((f = tabAt(tab, i)) == null)
+            } else if ((f = tabAt(tab, i)) == null) {
                 advance = casTabAt(tab, i, null, fwd);
-            else if ((fh = f.hash) == MOVED)
+            } else if ((fh = f.hash) == MOVED) {
                 advance = true; // already processed
-            else {
+            } else {
                 synchronized (f) {
                     if (tabAt(tab, i) == f) {
                         Node<K,V> ln, hn;
@@ -2762,7 +2801,9 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
     /* ---------------- TreeNodes -------------- */
 
     /**
-     * Nodes for use in TreeBins
+     * Nodes for use in TreeBins <p>
+     * 用于 TreeBin
+     * 
      */
     static final class TreeNode<K,V> extends Node<K,V> {
         TreeNode<K,V> parent;  // red-black tree links
@@ -2822,17 +2863,21 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * keys or values, but instead point to list of TreeNodes and
      * their root. They also maintain a parasitic read-write lock
      * forcing writers (who hold bin lock) to wait for readers (who do
-     * not) to complete before tree restructuring operations.
+     * not) to complete before tree restructuring operations. <p>
+     * 
+     * TreeNode 用于 bin 的头部。
+     * TreeBin 不保存任何 key 与 value，而是指向 TreeNode 列表以及它们的根节点。
+     * 会维护一个读-写锁，在树结构重新构建操作之前，强制写线程等待读线程完成。
      */
     static final class TreeBin<K,V> extends Node<K,V> {
         TreeNode<K,V> root;
         volatile TreeNode<K,V> first;
         volatile Thread waiter;
         volatile int lockState;
-        // values for lockState
-        static final int WRITER = 1; // set while holding write lock
-        static final int WAITER = 2; // set when waiting for write lock
-        static final int READER = 4; // increment value for setting read lock
+        // values for lockState 锁的状态
+        static final int WRITER = 1; // set while holding write lock 表示写锁
+        static final int WAITER = 2; // set when waiting for write lock 表示等待写锁
+        static final int READER = 4; // increment value for setting read lock 设置读锁的增量值
 
         /**
          * Tie-breaking utility for ordering insertions when equal
@@ -2843,11 +2888,11 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
          */
         static int tieBreakOrder(Object a, Object b) {
             int d;
-            if (a == null || b == null ||
-                (d = a.getClass().getName().
-                 compareTo(b.getClass().getName())) == 0)
-                d = (System.identityHashCode(a) <= System.identityHashCode(b) ?
-                     -1 : 1);
+            if (a == null || b == null 
+                    || (d = a.getClass().getName(). compareTo(b.getClass().getName())) == 0) {
+                
+                d = (System.identityHashCode(a) <= System.identityHashCode(b) ? -1 : 1);
+            }
             return d;
         }
 
