@@ -54,7 +54,9 @@ import java.util.function.UnaryOperator;
 /**
  * A thread-safe variant of {@link java.util.ArrayList} in which all mutative
  * operations ({@code add}, {@code set}, and so on) are implemented by
- * making a fresh copy of the underlying array.
+ * making a fresh copy of the underlying array. <p>
+ * 
+ * ArrayList 线程安全的一种变体。更新操作会在底层上创建一个新的数组来进行。
  *
  * <p>This is ordinarily too costly, but may be <em>more</em> efficient
  * than alternatives when traversal operations vastly outnumber
@@ -69,16 +71,24 @@ import java.util.function.UnaryOperator;
  * the list since the iterator was created.  Element-changing
  * operations on iterators themselves ({@code remove}, {@code set}, and
  * {@code add}) are not supported. These methods throw
- * {@code UnsupportedOperationException}.
+ * {@code UnsupportedOperationException}. <p>
+ * 
+ * 通常情况下，消耗比较大，但是在读比写多的情况下，效率比较高。
+ * 迭代操作时会创建一个快照，在快照上进行迭代。
+ * 迭代时，不允许对快照进行修改，即使是迭代器的修改方法也不行。
  *
- * <p>All elements are permitted, including {@code null}.
+ * <p>All elements are permitted, including {@code null}. <p>
+ * 
+ * null 元素也是被允许的。
  *
  * <p>Memory consistency effects: As with other concurrent
  * collections, actions in a thread prior to placing an object into a
  * {@code CopyOnWriteArrayList}
  * <a href="package-summary.html#MemoryVisibility"><i>happen-before</i></a>
  * actions subsequent to the access or removal of that element from
- * the {@code CopyOnWriteArrayList} in another thread.
+ * the {@code CopyOnWriteArrayList} in another thread. <p>
+ * 
+ * 跟其它的并发集合一样，在一个线程中将对象放到 CopyOnWriteArrayList 中，在 happen-before 之后，可以在另外一个线程中对这个元素进行访问或者移除。
  *
  * <p>This class is a member of the
  * <a href="{@docRoot}/../technotes/guides/collections/index.html">
