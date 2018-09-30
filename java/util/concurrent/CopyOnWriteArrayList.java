@@ -98,8 +98,7 @@ import java.util.function.UnaryOperator;
  * @author Doug Lea
  * @param <E> the type of elements held in this collection
  */
-public class CopyOnWriteArrayList<E>
-    implements List<E>, RandomAccess, Cloneable, java.io.Serializable {
+public class CopyOnWriteArrayList<E> implements List<E>, RandomAccess, Cloneable, java.io.Serializable {
     private static final long serialVersionUID = 8673264195747942595L;
 
     /** The lock protecting all mutators */
@@ -140,13 +139,14 @@ public class CopyOnWriteArrayList<E>
      */
     public CopyOnWriteArrayList(Collection<? extends E> c) {
         Object[] elements;
-        if (c.getClass() == CopyOnWriteArrayList.class)
+        if (c.getClass() == CopyOnWriteArrayList.class) {
             elements = ((CopyOnWriteArrayList<?>)c).getArray();
-        else {
+        } else {
             elements = c.toArray();
             // c.toArray might (incorrectly) not return Object[] (see 6260652)
-            if (elements.getClass() != Object[].class)
+            if (elements.getClass() != Object[].class) {
                 elements = Arrays.copyOf(elements, elements.length, Object[].class);
+            }
         }
         setArray(elements);
     }
@@ -435,20 +435,28 @@ public class CopyOnWriteArrayList<E>
     }
 
     /**
-     * Appends the specified element to the end of this list.
+     * Appends the specified element to the end of this list. <p>
+     * 
+     * 在列表后面添加元素
      *
      * @param e element to be appended to this list
      * @return {@code true} (as specified by {@link Collection#add})
      */
     public boolean add(E e) {
+        // 加独占锁
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
             Object[] elements = getArray();
             int len = elements.length;
+            // 将当前数组的内容拷贝到新数组
             Object[] newElements = Arrays.copyOf(elements, len + 1);
+            // 将元素添加数组的最后
             newElements[len] = e;
+            
+            // 将新数组设置为当前数组
             setArray(newElements);
+            
             return true;
         } finally {
             lock.unlock();
@@ -496,22 +504,28 @@ public class CopyOnWriteArrayList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
     public E remove(int index) {
+        // 加独占锁
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
             Object[] elements = getArray();
             int len = elements.length;
+            // 获取当前索引处的元素
             E oldValue = get(elements, index);
+            
             int numMoved = len - index - 1;
-            if (numMoved == 0)
+            
+            // 表示删除的是最后一个元素。为什么仅仅只把这个当做特例来处理
+            if (numMoved == 0) {
                 setArray(Arrays.copyOf(elements, len - 1));
-            else {
+            } else { // 删除其它位置的元素
                 Object[] newElements = new Object[len - 1];
                 System.arraycopy(elements, 0, newElements, 0, index);
-                System.arraycopy(elements, index + 1, newElements, index,
-                                 numMoved);
+                System.arraycopy(elements, index + 1, newElements, index, numMoved);
+                // 设置新数组为当前数组
                 setArray(newElements);
             }
+            // 返回删除的元素
             return oldValue;
         } finally {
             lock.unlock();
