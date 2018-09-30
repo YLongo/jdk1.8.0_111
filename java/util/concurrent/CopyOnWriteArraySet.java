@@ -115,11 +115,10 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      */
     public CopyOnWriteArraySet(Collection<? extends E> c) {
         if (c.getClass() == CopyOnWriteArraySet.class) {
-            @SuppressWarnings("unchecked") CopyOnWriteArraySet<E> cc =
-                (CopyOnWriteArraySet<E>)c;
+            @SuppressWarnings("unchecked") 
+            CopyOnWriteArraySet<E> cc = (CopyOnWriteArraySet<E>)c;
             al = new CopyOnWriteArrayList<E>(cc.al);
-        }
-        else {
+        } else {
             al = new CopyOnWriteArrayList<E>();
             al.addAllAbsent(c);
         }

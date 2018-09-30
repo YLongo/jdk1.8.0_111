@@ -426,6 +426,7 @@ public class CopyOnWriteArrayList<E> implements List<E>, RandomAccess, Cloneable
                 setArray(newElements);
             } else {
                 // Not quite a no-op; ensures volatile write semantics
+                // 为了保证 volatile 语义？不是很能理解
                 setArray(elements);
             }
             return oldValue;
@@ -1092,8 +1093,10 @@ public class CopyOnWriteArrayList<E> implements List<E>, RandomAccess, Cloneable
      * <p>The returned iterator provides a snapshot of the state of the list
      * when the iterator was constructed. No synchronization is needed while
      * traversing the iterator. The iterator does <em>NOT</em> support the
-     * {@code remove} method.
-     *
+     * {@code remove} method. <p>
+     * 
+     * 返回一个迭代器。返回的是 list 的一个快照。没有进行同步。不支持 remove。
+     * 
      * @return an iterator over the elements in this list in proper sequence
      */
     public Iterator<E> iterator() {
@@ -1151,9 +1154,18 @@ public class CopyOnWriteArrayList<E> implements List<E>, RandomAccess, Cloneable
     }
 
     static final class COWIterator<E> implements ListIterator<E> {
-        /** Snapshot of the array */
+        /** 
+         * Snapshot of the array 
+         * 
+         * 数组的快照
+         */
         private final Object[] snapshot;
-        /** Index of element to be returned by subsequent call to next.  */
+        
+        /** 
+         * Index of element to be returned by subsequent call to next.  
+         * 
+         * 下一个元素的索引
+         */
         private int cursor;
 
         private COWIterator(Object[] elements, int initialCursor) {
