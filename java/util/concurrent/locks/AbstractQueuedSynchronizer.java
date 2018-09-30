@@ -53,7 +53,12 @@ import sun.misc.Unsafe;
  * other state fields, but only the atomically updated {@code int}
  * value manipulated using methods {@link #getState}, {@link
  * #setState} and {@link #compareAndSetState} is tracked with respect
- * to synchronization.
+ * to synchronization. <p>
+ * 
+ * 提供一个基于先进先出的等待队列的框架来实现阻塞锁以及相关的同步器。
+ * 使用单原子值来表示转态。
+ * 子类必须定义 protected 方法来更改状态。
+ * 
  *
  * <p>Subclasses should be defined as non-public internal helper
  * classes that are used to implement the synchronization properties
@@ -286,9 +291,8 @@ import sun.misc.Unsafe;
  * @since 1.5
  * @author Doug Lea
  */
-public abstract class AbstractQueuedSynchronizer
-    extends AbstractOwnableSynchronizer
-    implements java.io.Serializable {
+public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer 
+                                                 implements java.io.Serializable {
 
     private static final long serialVersionUID = 7373984972572414691L;
 
