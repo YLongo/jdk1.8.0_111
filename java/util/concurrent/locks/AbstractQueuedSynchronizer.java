@@ -382,9 +382,18 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      * on the design of this class.
      */
     static final class Node {
-        /** Marker to indicate a node is waiting in shared mode */
+        
+        /**
+         * Marker to indicate a node is waiting in shared mode <p>
+         * 
+         * 表示在共享模式中等待的节点
+         */
         static final Node SHARED = new Node();
-        /** Marker to indicate a node is waiting in exclusive mode */
+        /** 
+         * Marker to indicate a node is waiting in exclusive mode 
+         * 
+         * 表示在独占模式中等待的节点
+         */
         static final Node EXCLUSIVE = null;
 
         /** waitStatus value to indicate thread has cancelled */
@@ -465,7 +474,10 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
 
         /**
          * The thread that enqueued this node.  Initialized on
-         * construction and nulled out after use.
+         * construction and nulled out after use. <p>
+         * 
+         * 节点中的已经入队的线程。通过构造方法初始化，已经被使用则为 null。
+         * 
          */
         volatile Thread thread;
 
@@ -521,13 +533,22 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      * Head of the wait queue, lazily initialized.  Except for
      * initialization, it is modified only via method setHead.  Note:
      * If head exists, its waitStatus is guaranteed not to be
-     * CANCELLED.
+     * CANCELLED. <p> 
+     *
+     * 队列的头部。延迟初始化。
+     * 可以通过 setHead 方法更改。
+     * 注意：如果头部存在，那么需要保证它的等待状态不能被 CANCELLED
+     * 
      */
     private transient volatile Node head;
 
     /**
      * Tail of the wait queue, lazily initialized.  Modified only via
-     * method enq to add new wait node.
+     * method enq to add new wait node. <p>
+     * 
+     * 队列的尾部。延迟初始化。
+     * 只能通过 enq 方法添加新的等待节点
+     * 
      */
     private transient volatile Node tail;
 
