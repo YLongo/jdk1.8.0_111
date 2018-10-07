@@ -34,10 +34,11 @@
  */
 
 package java.util.concurrent.locks;
-import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
+
 import sun.misc.Unsafe;
 
 /**
@@ -291,8 +292,7 @@ import sun.misc.Unsafe;
  * @since 1.5
  * @author Doug Lea
  */
-public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer 
-                                                 implements java.io.Serializable {
+public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer implements java.io.Serializable {
 
     private static final long serialVersionUID = 7373984972572414691L;
 
@@ -396,47 +396,80 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
          */
         static final Node EXCLUSIVE = null;
 
-        /** waitStatus value to indicate thread has cancelled */
+        /** 
+         * waitStatus value to indicate thread has cancelled <p> 
+         * 
+         * 表示线程被取消了
+         */
         static final int CANCELLED =  1;
-        /** waitStatus value to indicate successor's thread needs unparking */
+        
+        /** 
+         * waitStatus value to indicate successor's thread needs unparking 
+         * 
+         * 表示后续的线程需要被唤醒 
+         */
         static final int SIGNAL    = -1;
-        /** waitStatus value to indicate thread is waiting on condition */
+        
+        /** 
+         * waitStatus value to indicate thread is waiting on condition 
+         * 
+         * 表示线程在条件处等待
+         */
         static final int CONDITION = -2;
+        
         /**
          * waitStatus value to indicate the next acquireShared should
-         * unconditionally propagate
+         * unconditionally propagate <p>
+         * 
+         * 表示下一个获得的共享应该无条件传播
          */
         static final int PROPAGATE = -3;
 
         /**
-         * Status field, taking on only the values:
+         * Status field, taking on only the values:<br>
+         * 接受以下值的状态字段：<p>
          *   SIGNAL:     The successor of this node is (or will soon be)
          *               blocked (via park), so the current node must
          *               unpark its successor when it releases or
          *               cancels. To avoid races, acquire methods must
          *               first indicate they need a signal,
          *               then retry the atomic acquire, and then,
-         *               on failure, block.
+         *               on failure, block.<br>
+         *               当前节点的后续节点会阻塞，所以释放或者取消当前节点时，必须 unpark 它的后续节点。<br>
+         *               为了避免竞争，acquire 方法必须首先声明需要一个 signal，然后再尝试原子获取，在失败的时候再阻塞。<p>
+         *               
          *   CANCELLED:  This node is cancelled due to timeout or interrupt.
          *               Nodes never leave this state. In particular,
-         *               a thread with cancelled node never again blocks.
+         *               a thread with cancelled node never again blocks.<br>
+         *               该节点由于 timeout 或者 interrupt 而被取消。节点将会一直保持这个状态。<br>
+         *               一个被取消的线程将不再被阻塞。<p>
+         *               
          *   CONDITION:  This node is currently on a condition queue.
          *               It will not be used as a sync queue node
          *               until transferred, at which time the status
          *               will be set to 0. (Use of this value here has
          *               nothing to do with the other uses of the
-         *               field, but simplifies mechanics.)
+         *               field, but simplifies mechanics.)<br>
+         *               该节点当前在条件队列中<br>
+         *               将不会在被当作同步队列节点使用，直到进行了转移，同时，status 的值会被设置为 0。 <p>
+         *               
          *   PROPAGATE:  A releaseShared should be propagated to other
          *               nodes. This is set (for head node only) in
          *               doReleaseShared to ensure propagation
          *               continues, even if other operations have
-         *               since intervened.
-         *   0:          None of the above
+         *               since intervened.<br>
+         *               <p>
+         *               
+         *   0:          None of the above.<br>
+         *               以上都不是 <p>
+         *   
          *
          * The values are arranged numerically to simplify use.
          * Non-negative values mean that a node doesn't need to
          * signal. So, most code doesn't need to check for particular
-         * values, just for sign.
+         * values, just for sign. <p>
+         * 
+         * 非负的值表示这个节点不需要 signal。
          *
          * The field is initialized to 0 for normal sync nodes, and
          * CONDITION for condition nodes.  It is modified using CAS
@@ -559,7 +592,10 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
 
     /**
      * Returns the current value of synchronization state.
-     * This operation has memory semantics of a {@code volatile} read.
+     * This operation has memory semantics of a {@code volatile} read. <p>
+     * 
+     * 返回当前的同步状态
+     * 
      * @return current state value
      */
     protected final int getState() {
@@ -601,19 +637,32 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
     static final long spinForTimeoutThreshold = 1000L;
 
     /**
-     * Inserts node into queue, initializing if necessary. See picture above.
-     * @param node the node to insert
-     * @return node's predecessor
+     * Inserts node into queue, initializing if necessary. See picture above. <p>
+     * 
+     * 将节点插入到队列中
+     * 
+     * @param node the node to insert 需要插入的节点
+     * @return node's predecessor 当前节点的前驱节点 
      */
     private Node enq(final Node node) {
         for (;;) {
+        	// 将 t 指向队尾节点
             Node t = tail;
+            
+            // 如果是第一次进行插入，则进行初始化
             if (t == null) { // Must initialize
-                if (compareAndSetHead(new Node()))
-                    tail = head;
+            	/*
+            	 * 为队列设置头部节点
+            	 * 设置完之后 tail、head、以及 t 都指向这个新建的节点
+            	 */
+                if (compareAndSetHead(new Node())) {
+                	tail = head; // 队尾指针指向队头
+                }
             } else {
+            	// 当前节点的前驱节点设置为 t
                 node.prev = t;
-                if (compareAndSetTail(t, node)) {
+                if (compareAndSetTail(t, node)) { // tail 指向当前节点
+                	// t 的后继节点指向当前节点
                     t.next = node;
                     return t;
                 }
@@ -891,13 +940,14 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
                     failed = false;
                     return interrupted;
                 }
-                if (shouldParkAfterFailedAcquire(p, node) &&
-                    parkAndCheckInterrupt())
-                    interrupted = true;
+                if (shouldParkAfterFailedAcquire(p, node) && parkAndCheckInterrupt()) {
+                	interrupted = true;
+                }
             }
         } finally {
-            if (failed)
-                cancelAcquire(node);
+            if (failed) {
+            	cancelAcquire(node);
+            }
         }
     }
 
@@ -1220,9 +1270,12 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      *        can represent anything you like.
      */
     public final void acquire(int arg) {
-        if (!tryAcquire(arg) &&
-            acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
-            selfInterrupt();
+    	// 只有第一个条件返回 false 才会去判断第二个条件是否满足
+        if (!tryAcquire(arg)
+        		// 将当前线程放入阻塞队列中
+        		&& acquireQueued(addWaiter(Node.EXCLUSIVE), arg)) {
+        	selfInterrupt();
+        }
     }
 
     /**
@@ -1239,12 +1292,13 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      *        can represent anything you like.
      * @throws InterruptedException if the current thread is interrupted
      */
-    public final void acquireInterruptibly(int arg)
-            throws InterruptedException {
-        if (Thread.interrupted())
-            throw new InterruptedException();
-        if (!tryAcquire(arg))
-            doAcquireInterruptibly(arg);
+    public final void acquireInterruptibly(int arg) throws InterruptedException {
+        if (Thread.interrupted()) {
+        	throw new InterruptedException();
+        }
+        if (!tryAcquire(arg)) {
+        	doAcquireInterruptibly(arg);
+        }
     }
 
     /**
@@ -1707,8 +1761,10 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
          */
         Node p = enq(node);
         int ws = p.waitStatus;
-        if (ws > 0 || !compareAndSetWaitStatus(p, ws, Node.SIGNAL))
-            LockSupport.unpark(node.thread);
+        if (ws > 0 || !compareAndSetWaitStatus(p, ws, Node.SIGNAL)) {
+        	// 释放当前线程
+        	LockSupport.unpark(node.thread);
+        }
         return true;
     }
 
@@ -1737,7 +1793,11 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
 
     /**
      * Invokes release with current state value; returns saved state.
-     * Cancels node and throws exception on failure.
+     * Cancels node and throws exception on failure. <p>
+     * 
+     * 调用 release 释放当前的状态值，并返回当前的状态 <br>
+     * 如果失败则设置节点的状态为 CANCELLED 并抛出异常
+     * 
      * @param node the condition node for this wait
      * @return previous sync state
      */
@@ -1752,8 +1812,9 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
                 throw new IllegalMonitorStateException();
             }
         } finally {
-            if (failed)
-                node.waitStatus = Node.CANCELLED;
+            if (failed) {
+            	node.waitStatus = Node.CANCELLED;
+            }
         }
     }
 
@@ -1850,13 +1911,25 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      * {@code AbstractQueuedSynchronizer}.
      *
      * <p>This class is Serializable, but all fields are transient,
-     * so deserialized conditions have no waiters.
+     * so deserialized conditions have no waiters. <p>
+     * 
+     * 这个类可以进行序列化，但是所有字段都是用 transient 修饰的，所有反序列化之后不会有 waiter 字段。
      */
     public class ConditionObject implements Condition, java.io.Serializable {
+    	
         private static final long serialVersionUID = 1173984872572414699L;
-        /** First node of condition queue. */
+        /** 
+         * First node of condition queue. 
+         * 
+         * 条件队列的第一个节点 
+         */
         private transient Node firstWaiter;
-        /** Last node of condition queue. */
+        
+        /** 
+         * Last node of condition queue. 
+         * 
+         * 条件队列的最后一个节点
+         */
         private transient Node lastWaiter;
 
         /**
@@ -1867,7 +1940,10 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
         // Internal methods
 
         /**
-         * Adds a new waiter to wait queue.
+         * Adds a new waiter to wait queue. <p>
+         * 
+         * 添加一个新的等待节点到队列中
+         * 
          * @return its new wait node
          */
         private Node addConditionWaiter() {
@@ -1877,11 +1953,14 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
                 unlinkCancelledWaiters();
                 t = lastWaiter;
             }
+            // 添加一个新的条件节点
             Node node = new Node(Thread.currentThread(), Node.CONDITION);
-            if (t == null)
-                firstWaiter = node;
-            else
-                t.nextWaiter = node;
+            // 将该节点添加到条件等待队列中
+            if (t == null) {
+            	firstWaiter = node;
+            } else {
+            	t.nextWaiter = node;
+            }
             lastWaiter = node;
             return node;
         }
@@ -1894,11 +1973,11 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
          */
         private void doSignal(Node first) {
             do {
-                if ( (firstWaiter = first.nextWaiter) == null)
-                    lastWaiter = null;
+                if ( (firstWaiter = first.nextWaiter) == null) {
+                	lastWaiter = null;
+                }
                 first.nextWaiter = null;
-            } while (!transferForSignal(first) &&
-                     (first = firstWaiter) != null);
+            } while (!transferForSignal(first) && (first = firstWaiter) != null);
         }
 
         /**
@@ -1960,11 +2039,13 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
          *         returns {@code false}
          */
         public final void signal() {
-            if (!isHeldExclusively())
-                throw new IllegalMonitorStateException();
+            if (!isHeldExclusively()) {
+            	throw new IllegalMonitorStateException();
+            }
             Node first = firstWaiter;
-            if (first != null)
-                doSignal(first);
+            if (first != null) {
+            	doSignal(first);
+            }
         }
 
         /**
@@ -2055,15 +2136,21 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
          * </ol>
          */
         public final void await() throws InterruptedException {
-            if (Thread.interrupted())
-                throw new InterruptedException();
+            if (Thread.interrupted()) {
+            	throw new InterruptedException();
+            }
+            // 添加一个新的节点到条件队列的末尾
             Node node = addConditionWaiter();
+            // 释放锁
             int savedState = fullyRelease(node);
             int interruptMode = 0;
+            
             while (!isOnSyncQueue(node)) {
+            	// 挂起当前线程
                 LockSupport.park(this);
-                if ((interruptMode = checkInterruptWhileWaiting(node)) != 0)
-                    break;
+                if ((interruptMode = checkInterruptWhileWaiting(node)) != 0) {
+                	break;
+                }
             }
             if (acquireQueued(node, savedState) && interruptMode != THROW_IE)
                 interruptMode = REINTERRUPT;
@@ -2293,10 +2380,11 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
         try {
             stateOffset = unsafe.objectFieldOffset
                 (AbstractQueuedSynchronizer.class.getDeclaredField("state"));
-            headOffset = unsafe.objectFieldOffset
-                (AbstractQueuedSynchronizer.class.getDeclaredField("head"));
-            tailOffset = unsafe.objectFieldOffset
-                (AbstractQueuedSynchronizer.class.getDeclaredField("tail"));
+            
+            headOffset = unsafe.objectFieldOffset(AbstractQueuedSynchronizer.class.getDeclaredField("head"));
+            
+            tailOffset = unsafe.objectFieldOffset (AbstractQueuedSynchronizer.class.getDeclaredField("tail"));
+            
             waitStatusOffset = unsafe.objectFieldOffset
                 (Node.class.getDeclaredField("waitStatus"));
             nextOffset = unsafe.objectFieldOffset
@@ -2306,7 +2394,9 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
     }
 
     /**
-     * CAS head field. Used only by enq.
+     * CAS head field. Used only by enq. <p>
+     * 
+     * 使用 CAS 设置队列头部的元素。仅仅只在入队时使用。
      */
     private final boolean compareAndSetHead(Node update) {
         return unsafe.compareAndSwapObject(this, headOffset, null, update);

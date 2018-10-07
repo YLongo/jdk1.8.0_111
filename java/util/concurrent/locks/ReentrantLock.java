@@ -104,6 +104,7 @@ import java.util.Collection;
  * @author Doug Lea
  */
 public class ReentrantLock implements Lock, java.io.Serializable {
+	
     private static final long serialVersionUID = 7373984872572414699L;
     /** Synchronizer providing all implementation mechanics */
     private final Sync sync;
@@ -114,6 +115,7 @@ public class ReentrantLock implements Lock, java.io.Serializable {
      * represent the number of holds on the lock.
      */
     abstract static class Sync extends AbstractQueuedSynchronizer {
+    	
         private static final long serialVersionUID = -5179523762034025860L;
 
         /**
@@ -129,19 +131,24 @@ public class ReentrantLock implements Lock, java.io.Serializable {
         final boolean nonfairTryAcquire(int acquires) {
             final Thread current = Thread.currentThread();
             int c = getState();
-            if (c == 0) {
+            if (c == 0) { // 如果当前状态为 0，那么则表示没有加锁
+            	// 设置当前状态为指定的 acquires
                 if (compareAndSetState(0, acquires)) {
+                	// 设置当前线程为线程拥有者
                     setExclusiveOwnerThread(current);
                     return true;
                 }
-            }
-            else if (current == getExclusiveOwnerThread()) {
+            } else if (current == getExclusiveOwnerThread()) { // 如果当前线程为线程拥有者
+            	// 将当前的状态值加上 acquires
                 int nextc = c + acquires;
-                if (nextc < 0) // overflow
-                    throw new Error("Maximum lock count exceeded");
+                if (nextc < 0) { // overflow
+                	throw new Error("Maximum lock count exceeded");
+                }
+                // 更新状态值
                 setState(nextc);
                 return true;
             }
+            // 如果锁已经被其它线程持有，并且持有者不是当前线程
             return false;
         }
 
@@ -200,13 +207,18 @@ public class ReentrantLock implements Lock, java.io.Serializable {
 
         /**
          * Performs lock.  Try immediate barge, backing up to normal
-         * acquire on failure.
+         * acquire on failure. <p>
+         * 
+         * 立即获取
          */
         final void lock() {
-            if (compareAndSetState(0, 1))
-                setExclusiveOwnerThread(Thread.currentThread());
-            else
-                acquire(1);
+        	// 如果当前状态为 0，则更新为 1
+            if (compareAndSetState(0, 1)) {
+            	// 设置拥有者线程为当前线程
+            	setExclusiveOwnerThread(Thread.currentThread());
+            } else {
+            	acquire(1);
+            }
         }
 
         protected final boolean tryAcquire(int acquires) {
