@@ -580,7 +580,7 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      * Tail of the wait queue, lazily initialized.  Modified only via
      * method enq to add new wait node. <p>
      * 
-     * 队列的尾部。延迟初始化。
+     * 等待队列的尾部。延迟初始化。
      * 只能通过 enq 方法添加新的等待节点
      * 
      */
@@ -1290,7 +1290,7 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
     public final void acquire(int arg) {
     	// 只有第一个条件返回 false 才会去判断第二个条件是否满足
         if (!tryAcquire(arg)
-        		// 将当前线程放入阻塞队列中
+        		// 如果获取锁失败，则将当前线程放入等待队列中，知道获取成功返回
         		&& acquireQueued(addWaiter(Node.EXCLUSIVE), arg)) {
         	selfInterrupt();
         }
@@ -1761,7 +1761,7 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      * Transfers a node from a condition queue onto sync queue.
      * Returns true if successful. <p>
      * 
-     * 将节点从条件队列中转移到同步队列中
+     * 将节点从条件队列中转移到等待队列中
      * 
      * @param node the node
      * @return true if successfully transferred (else the node was
@@ -2410,8 +2410,7 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
 
     static {
         try {
-            stateOffset = unsafe.objectFieldOffset
-                (AbstractQueuedSynchronizer.class.getDeclaredField("state"));
+            stateOffset = unsafe.objectFieldOffset(AbstractQueuedSynchronizer.class.getDeclaredField("state"));
             
             headOffset = unsafe.objectFieldOffset(AbstractQueuedSynchronizer.class.getDeclaredField("head"));
             

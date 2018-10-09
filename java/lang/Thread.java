@@ -961,7 +961,9 @@ class Thread implements Runnable {
      *
      * <p>A thread interruption ignored because a thread was not alive
      * at the time of the interrupt will be reflected by this method
-     * returning false.
+     * returning false. <p>
+     * 
+     * 判断当前线程是否已经被中断。如果被中断，则会清除中断状态。
      *
      * @return  <code>true</code> if the current thread has been interrupted;
      *          <code>false</code> otherwise.
@@ -974,11 +976,13 @@ class Thread implements Runnable {
 
     /**
      * Tests whether this thread has been interrupted.  The <i>interrupted
-     * status</i> of the thread is unaffected by this method.
-     *
+     * status</i> of the thread is unaffected by this method. 
+     * 
      * <p>A thread interruption ignored because a thread was not alive
      * at the time of the interrupt will be reflected by this method
-     * returning false.
+     * returning false. <p>
+     * 
+     * 判断当前线程是否被中断
      *
      * @return  <code>true</code> if this thread has been interrupted;
      *          <code>false</code> otherwise.
