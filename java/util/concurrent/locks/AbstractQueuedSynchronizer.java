@@ -681,12 +681,17 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      * @return the new node
      */
     private Node addWaiter(Node mode) {
+    	// 根据模式(mode) 新建一个节点
         Node node = new Node(Thread.currentThread(), mode);
+        
         // Try the fast path of enq; backup to full enq on failure
         Node pred = tail;
-        if (pred != null) {
+        
+        if (pred != null) { // 表示存在尾结点，表示队列不空。为空时，head = tail = null
+        	// 设置新节点的前驱节点为 tail
             node.prev = pred;
-            if (compareAndSetTail(pred, node)) {
+            if (compareAndSetTail(pred, node)) { // 如果当前的队列中的尾结点为 tail，则将新节点设置为尾结点
+            	// tail 的后继节点为新节点。
                 pred.next = node;
                 return node;
             }
@@ -698,7 +703,9 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
     /**
      * Sets head of queue to be node, thus dequeuing. Called only by
      * acquire methods.  Also nulls out unused fields for sake of GC
-     * and to suppress unnecessary signals and traversals.
+     * and to suppress unnecessary signals and traversals. <p>
+     * 
+     * 在出队的时候设置头结点。仅仅在 acquire 方法中使用
      *
      * @param node the node
      */
@@ -937,10 +944,13 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
         try {
             boolean interrupted = false;
             for (;;) {
+            	// 获取当前节点的前驱节点
                 final Node p = node.predecessor();
+                
+                // 如果当前节点的前驱节点为头结点，并且成功获取到锁
                 if (p == head && tryAcquire(arg)) {
-                    setHead(node);
-                    p.next = null; // help GC
+                    setHead(node);  // 设置当前节点为头结点
+                    p.next = null;  // help GC
                     failed = false;
                     return interrupted;
                 }
@@ -1749,7 +1759,10 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
 
     /**
      * Transfers a node from a condition queue onto sync queue.
-     * Returns true if successful.
+     * Returns true if successful. <p>
+     * 
+     * 将节点从条件队列中转移到同步队列中
+     * 
      * @param node the node
      * @return true if successfully transferred (else the node was
      * cancelled before signal)
@@ -1757,9 +1770,11 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
     final boolean transferForSignal(Node node) {
         /*
          * If cannot change waitStatus, the node has been cancelled.
+         * 将 waitStatus 的值改为 0，如果更改失败，则直接返回
          */
-        if (!compareAndSetWaitStatus(node, Node.CONDITION, 0))
-            return false;
+        if (!compareAndSetWaitStatus(node, Node.CONDITION, 0)) {
+        	return false;
+        }
 
         /*
          * Splice onto queue and try to set waitStatus of predecessor to
@@ -1963,7 +1978,7 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
             }
             // 添加一个新的条件节点
             Node node = new Node(Thread.currentThread(), Node.CONDITION);
-            // 将该节点添加到条件等待队列中
+            // 将该节点添加到条件等待队列末尾
             if (t == null) {
             	firstWaiter = node;
             } else {
@@ -1977,6 +1992,7 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
          * Removes and transfers nodes until hit non-cancelled one or
          * null. Split out from signal in part to encourage compilers
          * to inline the case of no waiters.
+         * 
          * @param first (non-null) the first node on condition queue
          */
         private void doSignal(Node first) {
@@ -1984,7 +2000,9 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
                 if ( (firstWaiter = first.nextWaiter) == null) {
                 	lastWaiter = null;
                 }
+                // 将当前节点从条件队列中移除
                 first.nextWaiter = null;
+                // 更改状态不成功则一直尝试进行更改
             } while (!transferForSignal(first) && (first = firstWaiter) != null);
         }
 
@@ -2047,9 +2065,15 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
          *         returns {@code false}
          */
         public final void signal() {
+        	/* 
+        	 * 是否在独占模式下。即判断线程独占者是否是当前线程
+        	 * 所以在调用 signal 方法之前，需要调用 lock 方法
+        	 * 
+        	 */
             if (!isHeldExclusively()) {
             	throw new IllegalMonitorStateException();
             }
+            
             Node first = firstWaiter;
             if (first != null) {
             	doSignal(first);
@@ -2420,11 +2444,8 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
     /**
      * CAS waitStatus field of a node.
      */
-    private static final boolean compareAndSetWaitStatus(Node node,
-                                                         int expect,
-                                                         int update) {
-        return unsafe.compareAndSwapInt(node, waitStatusOffset,
-                                        expect, update);
+    private static final boolean compareAndSetWaitStatus(Node node, int expect, int update) {
+        return unsafe.compareAndSwapInt(node, waitStatusOffset, expect, update);
     }
 
     /**
