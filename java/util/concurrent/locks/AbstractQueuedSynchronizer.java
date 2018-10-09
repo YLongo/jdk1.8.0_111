@@ -542,10 +542,11 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
          */
         final Node predecessor() throws NullPointerException {
             Node p = prev;
-            if (p == null)
+            if (p == null) {
                 throw new NullPointerException();
-            else
+            } else {
                 return p;
+            }
         }
 
         Node() {    // Used to establish initial head or SHARED marker
@@ -671,9 +672,12 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
     }
 
     /**
-     * Creates and enqueues node for current thread and given mode.
+     * Creates and enqueues node for current thread and given mode. <p>
+     * 
+     * 根据当前线程的节点模式，创建节点并入队
      *
-     * @param mode Node.EXCLUSIVE for exclusive, Node.SHARED for shared
+     * @param mode Node.EXCLUSIVE for exclusive, Node.SHARED for shared <p>
+     *             Node.EXCLUSIVE 表示独占模式，Node.SHARED 表示共享模式
      * @return the new node
      */
     private Node addWaiter(Node mode) {
@@ -1263,7 +1267,11 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      * returning on success.  Otherwise the thread is queued, possibly
      * repeatedly blocking and unblocking, invoking {@link
      * #tryAcquire} until success.  This method can be used
-     * to implement method {@link Lock#lock}.
+     * to implement method {@link Lock#lock}. <p>
+     * 
+     * 在独占模式下使用，忽略 interrupt。<br>
+     * 如果 tryAcquire 返回失败，那么线程将会进行排队，线程的状态可能会在阻塞与解除阻塞之间重复，
+     * 直到 tryAcquire 返回成功。
      *
      * @param arg the acquire argument.  This value is conveyed to
      *        {@link #tryAcquire} but is otherwise uninterpreted and
