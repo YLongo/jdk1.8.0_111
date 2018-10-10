@@ -413,7 +413,7 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
         /** 
          * waitStatus value to indicate thread is waiting on condition 
          * 
-         * 表示线程在条件处等待
+         * 表示线程在条件队列中等待
          */
         static final int CONDITION = -2;
         
@@ -587,7 +587,9 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
     private transient volatile Node tail;
 
     /**
-     * The synchronization state.
+     * The synchronization state. <p>
+     * 
+     * 同步状态
      */
     private volatile int state;
 
@@ -1555,7 +1557,9 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
 
     /**
      * Queries whether any threads have been waiting to acquire longer
-     * than the current thread.
+     * than the current thread. <p>
+     * 
+     * 是否还有其它的线程在等待获取锁
      *
      * <p>An invocation of this method is equivalent to (but may be
      * more efficient than):
@@ -1603,8 +1607,10 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
         Node t = tail; // Read fields in reverse initialization order
         Node h = head;
         Node s;
-        return h != t &&
-            ((s = h.next) == null || s.thread != Thread.currentThread());
+        /*
+         * TODO 为什么这样判断？
+         */
+        return h != t && ((s = h.next) == null || s.thread != Thread.currentThread());
     }
 
 
@@ -2014,7 +2020,9 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
          * signals. It traverses all nodes rather than stopping at a
          * particular target to unlink all pointers to garbage nodes
          * without requiring many re-traversals during cancellation
-         * storms.
+         * storms. <p>
+         * 
+         * 移除条件队列中被取消的等待节点
          */
         private void unlinkCancelledWaiters() {
             Node t = firstWaiter;
@@ -2023,15 +2031,17 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
                 Node next = t.nextWaiter;
                 if (t.waitStatus != Node.CONDITION) {
                     t.nextWaiter = null;
-                    if (trail == null)
+                    if (trail == null) {
                         firstWaiter = next;
-                    else
+                    } else {
                         trail.nextWaiter = next;
-                    if (next == null)
+                    }
+                    if (next == null) {
                         lastWaiter = trail;
-                }
-                else
+                    }
+                } else {
                     trail = t;
+                }
                 t = next;
             }
         }
