@@ -676,7 +676,7 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
     /**
      * Creates and enqueues node for current thread and given mode. <p>
      * 
-     * 根据当前线程的节点模式，创建节点并入队
+     * 根据当前线程的节点模式，创建节点并加入到等待队列中
      *
      * @param mode Node.EXCLUSIVE for exclusive, Node.SHARED for shared <p>
      *             Node.EXCLUSIVE 表示独占模式，Node.SHARED 表示共享模式
@@ -718,7 +718,9 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
     }
 
     /**
-     * Wakes up node's successor, if one exists.
+     * Wakes up node's successor, if one exists. <p>
+     * 
+     * 唤醒当前节点的后继节点
      *
      * @param node the node
      */
@@ -727,10 +729,13 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
          * If status is negative (i.e., possibly needing signal) try
          * to clear in anticipation of signalling.  It is OK if this
          * fails or if status is changed by waiting thread.
+         * 
+         * 为什么这里允许失败？不会有影响吗？
          */
         int ws = node.waitStatus;
-        if (ws < 0)
+        if (ws < 0) { // 将当前的状态设置为 0
             compareAndSetWaitStatus(node, ws, 0);
+        }
 
         /*
          * Thread to unpark is held in successor, which is normally
@@ -739,14 +744,20 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
          * non-cancelled successor.
          */
         Node s = node.next;
-        if (s == null || s.waitStatus > 0) {
+        if (s == null // TODO 什么情况下会为 null？ 
+                || s.waitStatus > 0) { // 如果该节点已经被取消了
+            
             s = null;
-            for (Node t = tail; t != null && t != node; t = t.prev)
-                if (t.waitStatus <= 0)
+            for (Node t = tail; t != null && t != node; t = t.prev) {
+                if (t.waitStatus <= 0) {
                     s = t;
+                }
+            }
         }
-        if (s != null)
+        
+        if (s != null) {
             LockSupport.unpark(s.thread);
+        }
     }
 
     /**
@@ -875,32 +886,46 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      * Returns true if thread should block. This is the main signal
      * control in all acquire loops.  Requires that pred == node.prev.
      *
-     * @param pred node's predecessor holding status
-     * @param node the node
-     * @return {@code true} if thread should block
+     * @param pred node's predecessor holding status 当前节点的前驱节点
+     * @param node the node 当前节点
+     * @return {@code true} if thread should block 当前线程是否可以被阻塞
      */
     private static boolean shouldParkAfterFailedAcquire(Node pred, Node node) {
         int ws = pred.waitStatus;
-        if (ws == Node.SIGNAL)
+        if (ws == Node.SIGNAL) { // 值为 -1
             /*
              * This node has already set status asking a release
              * to signal it, so it can safely park.
+             * 
+             * 如果前驱节点的状态为 SIGNAL，那么则表示当前节点可以被阻塞。
+             * 因为如果节点的状态接 SIGNAL，则表示它的后继节点需要被唤醒
              */
             return true;
+        }
         if (ws > 0) {
             /*
              * Predecessor was cancelled. Skip over predecessors and
              * indicate retry.
+             * 
+             * 前驱节点的状态大于 0，表示它的状态为 CANCELLED，即被取消了。
+             * 所以会一直寻找前驱节点转态不大于 0 的节点
              */
             do {
+                /*
+                 * 跳过前驱节点状态大于 0 的节点
+                 * 被跳过的节点将会被 GC 回收
+                 */
                 node.prev = pred = pred.prev;
             } while (pred.waitStatus > 0);
+            // 找到了一个前驱节点的转态不大于 0 的节点，那么将当前节点设置为它的后继节点
             pred.next = node;
         } else {
             /*
              * waitStatus must be 0 or PROPAGATE.  Indicate that we
              * need a signal, but don't park yet.  Caller will need to
-             * retry to make sure it cannot acquire before parking.
+             * retry to make sure it cannot acquire before parking. <p>
+             * 
+             * 设置前驱节点的转态为 SIGNAL
              */
             compareAndSetWaitStatus(pred, ws, Node.SIGNAL);
         }
@@ -920,7 +945,13 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      * @return {@code true} if interrupted
      */
     private final boolean parkAndCheckInterrupt() {
+        // 阻塞当前线程
         LockSupport.park(this);
+        /*
+         * 如果当线程被中断，会清除中断标记
+         * 这也是为什么 acquire 方法不会响应中断的原因
+         * 在获取锁之后，再调用 selfInterrupt 进行自我中断
+         */
         return Thread.interrupted();
     }
 
@@ -956,6 +987,7 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
                     failed = false;
                     return interrupted;
                 }
+                // 是否应该被阻塞，防止一直自旋。
                 if (shouldParkAfterFailedAcquire(p, node) && parkAndCheckInterrupt()) {
                 	interrupted = true;
                 }
@@ -1034,9 +1066,11 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
 
     /**
      * Acquires in shared uninterruptible mode.
+     * 
      * @param arg the acquire argument
      */
     private void doAcquireShared(int arg) {
+        
         final Node node = addWaiter(Node.SHARED);
         boolean failed = true;
         try {
@@ -1349,7 +1383,9 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
     /**
      * Releases in exclusive mode.  Implemented by unblocking one or
      * more threads if {@link #tryRelease} returns true.
-     * This method can be used to implement method {@link Lock#unlock}.
+     * This method can be used to implement method {@link Lock#unlock}. <p>
+     * 
+     * 在独占模式中使用
      *
      * @param arg the release argument.  This value is conveyed to
      *        {@link #tryRelease} but is otherwise uninterpreted and
@@ -1359,8 +1395,9 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
     public final boolean release(int arg) {
         if (tryRelease(arg)) {
             Node h = head;
-            if (h != null && h.waitStatus != 0)
+            if (h != null && h.waitStatus != 0) {
                 unparkSuccessor(h);
+            }
             return true;
         }
         return false;
@@ -1371,15 +1408,18 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      * first invoking at least once {@link #tryAcquireShared},
      * returning on success.  Otherwise the thread is queued, possibly
      * repeatedly blocking and unblocking, invoking {@link
-     * #tryAcquireShared} until success.
+     * #tryAcquireShared} until success. <p>
+     * 
+     * 在共享模式中使用，忽略中断
      *
      * @param arg the acquire argument.  This value is conveyed to
      *        {@link #tryAcquireShared} but is otherwise uninterpreted
      *        and can represent anything you like.
      */
     public final void acquireShared(int arg) {
-        if (tryAcquireShared(arg) < 0)
+        if (tryAcquireShared(arg) < 0) {
             doAcquireShared(arg);
+        }
     }
 
     /**
