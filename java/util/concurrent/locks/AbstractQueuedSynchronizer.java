@@ -1050,8 +1050,9 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
                     return true;
                 }
                 nanosTimeout = deadline - System.nanoTime();
-                if (nanosTimeout <= 0L)
+                if (nanosTimeout <= 0L) {
                     return false;
+                }
                 if (shouldParkAfterFailedAcquire(p, node) &&
                     nanosTimeout > spinForTimeoutThreshold)
                     LockSupport.parkNanos(this, nanosTimeout);
@@ -1328,6 +1329,7 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
         if (!tryAcquire(arg)
         		// 如果获取锁失败，则将当前线程放入等待队列中，知道获取成功返回
         		&& acquireQueued(addWaiter(Node.EXCLUSIVE), arg)) {
+            // 自我中断
         	selfInterrupt();
         }
     }
@@ -1374,10 +1376,10 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      */
     public final boolean tryAcquireNanos(int arg, long nanosTimeout)
             throws InterruptedException {
-        if (Thread.interrupted())
+        if (Thread.interrupted()) {
             throw new InterruptedException();
-        return tryAcquire(arg) ||
-            doAcquireNanos(arg, nanosTimeout);
+        }
+        return tryAcquire(arg) || doAcquireNanos(arg, nanosTimeout);
     }
 
     /**
