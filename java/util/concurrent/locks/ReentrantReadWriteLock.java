@@ -283,6 +283,8 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
 
         /** 
          * Returns the number of shared holds represented in count <p>
+         * 
+         * 返回读锁的个数
          */
         static int sharedCount(int c)    { 
             return c >>> SHARED_SHIFT; 
@@ -290,7 +292,7 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
         /** 
          * Returns the number of exclusive holds represented in count <p>
          * 
-         * 返回写锁可重入次数
+         * 写锁可重入次数
          */
         static int exclusiveCount(int c) { 
             return c & EXCLUSIVE_MASK; // 其实结果就等于 c
@@ -429,7 +431,7 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
             
             if (c != 0) { // 表示已经有线程获取了锁
                 // (Note: if c != 0 and w == 0 then shared count != 0)
-                // 如果 if c != 0 and w == 0 那么读锁技术不等于 0
+                // 如果 if c != 0 and w == 0 那么读锁计数不等于 0
                 if (w == 0 || current != getExclusiveOwnerThread()) {
                     return false;
                 }
@@ -503,16 +505,28 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
              * 3. If step 2 fails either because thread
              *    apparently not eligible or CAS fails or count
              *    saturated, chain to version with full retry loop.
+             *    
+             * 1. 如果写锁被其它线程持有，那么失败
+             * 2. 否则的话，当前线程可以参与锁的竞争
+             * 3. 如果步骤 2 失败，将被参与自旋
              */
             Thread current = Thread.currentThread();
+            
             int c = getState();
-            if (exclusiveCount(c) != 0 &&
-                getExclusiveOwnerThread() != current)
+
+            // 如果写锁被当前线程持有呢？不是应该直接返回的吗？
+            if (exclusiveCount(c) != 0 // 写锁被持有 
+                    && getExclusiveOwnerThread() != current) { // 并且不是被当前线程所持有
+
                 return -1;
+            }
+            
             int r = sharedCount(c);
-            if (!readerShouldBlock() &&
-                r < MAX_COUNT &&
-                compareAndSetState(c, c + SHARED_UNIT)) {
+            
+            if (!readerShouldBlock() 
+                    && r < MAX_COUNT 
+                    && compareAndSetState(c, c + SHARED_UNIT)) {
+                
                 if (r == 0) {
                     firstReader = current;
                     firstReaderHoldCount = 1;
@@ -520,10 +534,11 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
                     firstReaderHoldCount++;
                 } else {
                     HoldCounter rh = cachedHoldCounter;
-                    if (rh == null || rh.tid != getThreadId(current))
+                    if (rh == null || rh.tid != getThreadId(current)) {
                         cachedHoldCounter = rh = readHolds.get();
-                    else if (rh.count == 0)
+                    } else if (rh.count == 0) {
                         readHolds.set(rh);
+                    }
                     rh.count++;
                 }
                 return 1;
@@ -764,7 +779,11 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
          *
          * <p>If the write lock is held by another thread then
          * the current thread becomes disabled for thread scheduling
-         * purposes and lies dormant until the read lock has been acquired.
+         * purposes and lies dormant until the read lock has been acquired. <p>
+         * 
+         * 如果写锁没有被其它线程持有则获取读锁，并立即返回。<p>
+         * 
+         * 如果写锁已经被其它线程持有，那么当前线程会被阻塞，直到获取到锁为止。
          */
         public void lock() {
             sync.acquireShared(1);
