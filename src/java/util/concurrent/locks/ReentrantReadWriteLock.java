@@ -305,6 +305,9 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
         static final class HoldCounter {
             int count = 0;
             // Use id, not reference, to avoid garbage retention
+            /**
+             * 当前线程的 id
+             */
             final long tid = getThreadId(Thread.currentThread());
         }
 
@@ -312,8 +315,7 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
          * ThreadLocal subclass. Easiest to explicitly define for sake
          * of deserialization mechanics.
          */
-        static final class ThreadLocalHoldCounter
-            extends ThreadLocal<HoldCounter> {
+        static final class ThreadLocalHoldCounter extends ThreadLocal<HoldCounter> {
             public HoldCounter initialValue() {
                 return new HoldCounter();
             }
@@ -338,7 +340,10 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
          * reference to the Thread.
          *
          * <p>Accessed via a benign data race; relies on the memory
-         * model's final field and out-of-thin-air guarantees.
+         * model's final field and out-of-thin-air guarantees. <p>
+         * 
+         * 当前最后一个线程获取读锁的次数 (ps:这里的最后一个的意思是，比如你在排队的时候，
+         * 你排在最后的位置上，但是在你没有排队的时候，在你排队时站在你前面的那个人就是最后一个。)<br>
          */
         private transient HoldCounter cachedHoldCounter;
 
@@ -358,9 +363,15 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
          * model's out-of-thin-air guarantees for references.
          *
          * <p>This allows tracking of read holds for uncontended read
-         * locks to be very cheap.
+         * locks to be very cheap. <p>
+         * 
+         * 第一个获取读锁的线程。
          */
         private transient Thread firstReader = null;
+        
+        /**
+         * 第一个线程获取读锁时的计数
+         */
         private transient int firstReaderHoldCount;
 
         Sync() {
@@ -377,7 +388,9 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
         /**
          * Returns true if the current thread, when trying to acquire
          * the read lock, and otherwise eligible to do so, should block
-         * because of policy for overtaking other waiting threads.
+         * because of policy for overtaking other waiting threads. <br>
+         * 
+         * 当前线程获取读锁是否应该阻塞
          */
         abstract boolean readerShouldBlock();
 
@@ -456,21 +469,25 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
 
         protected final boolean tryReleaseShared(int unused) {
             Thread current = Thread.currentThread();
+            
             if (firstReader == current) {
                 // assert firstReaderHoldCount > 0;
-                if (firstReaderHoldCount == 1)
+                if (firstReaderHoldCount == 1) {
                     firstReader = null;
-                else
+                } else {
                     firstReaderHoldCount--;
+                }
             } else {
                 HoldCounter rh = cachedHoldCounter;
-                if (rh == null || rh.tid != getThreadId(current))
+                if (rh == null || rh.tid != getThreadId(current)) {
                     rh = readHolds.get();
+                }
                 int count = rh.count;
                 if (count <= 1) {
                     readHolds.remove();
-                    if (count <= 0)
+                    if (count <= 0) {
                         throw unmatchedUnlockException();
+                    }
                 }
                 --rh.count;
             }
@@ -514,35 +531,45 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
             
             int c = getState();
 
-            // 如果写锁被当前线程持有呢？不是应该直接返回的吗？
+            /*
+             * 如果写锁被当前线程持有呢？不是应该直接返回的吗？
+             * 一个线程要么写，要么读，不可能既进行读操作，又进行写操作。
+             */
             if (exclusiveCount(c) != 0 // 写锁被持有 
                     && getExclusiveOwnerThread() != current) { // 并且不是被当前线程所持有
 
                 return -1;
             }
-            
+            // 返回读锁的个数
             int r = sharedCount(c);
             
-            if (!readerShouldBlock() 
-                    && r < MAX_COUNT 
-                    && compareAndSetState(c, c + SHARED_UNIT)) {
+            if (!readerShouldBlock() // TODO 这个条件还没有理解什么意思？
+                    && r < MAX_COUNT // 如果读锁的个数小于最大个数
+                    && compareAndSetState(c, c + SHARED_UNIT)) { // 将读锁的次数 +c
                 
-                if (r == 0) {
+                if (r == 0) { // 如果还没有线程获取读锁
+                    // 第一个读锁为当前线程
                     firstReader = current;
+                    // 当前线程获取读锁的计数
                     firstReaderHoldCount = 1;
-                } else if (firstReader == current) {
+                } else if (firstReader == current) {// 如果当前线程是第一个获取读锁的线程
+                    // 则将计数 +1
                     firstReaderHoldCount++;
                 } else {
                     HoldCounter rh = cachedHoldCounter;
+                    // 如果没有其它线程获取读锁，或者其它获取读锁的不是当前线程
                     if (rh == null || rh.tid != getThreadId(current)) {
+                        // 新建一个 HoldCounter，内部使用 ThreadLocal 维护
                         cachedHoldCounter = rh = readHolds.get();
-                    } else if (rh.count == 0) {
+                    } else if (rh.count == 0) { // TODO 什么时候这个值会为 0 呢？
                         readHolds.set(rh);
                     }
+                    // 将当前线程持有读锁的次数 +1
                     rh.count++;
                 }
                 return 1;
             }
+            // 如果尝试获取读锁失败，则进行这个操作
             return fullTryAcquireShared(current);
         }
 
@@ -560,9 +587,12 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
             HoldCounter rh = null;
             for (;;) {
                 int c = getState();
+                // 如果已经有线程获取写锁
                 if (exclusiveCount(c) != 0) {
-                    if (getExclusiveOwnerThread() != current)
+                    // 但是写锁不是当前线程
+                    if (getExclusiveOwnerThread() != current) {
                         return -1;
+                    }
                     // else we hold the exclusive lock; blocking here
                     // would cause deadlock.
                 } else if (readerShouldBlock()) {
@@ -582,8 +612,11 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
                             return -1;
                     }
                 }
-                if (sharedCount(c) == MAX_COUNT)
+                // 如果读锁的数量等于最大数量
+                if (sharedCount(c) == MAX_COUNT) {
                     throw new Error("Maximum lock count exceeded");
+                }
+                
                 if (compareAndSetState(c, c + SHARED_UNIT)) {
                     if (sharedCount(c) == 0) {
                         firstReader = current;
@@ -1556,7 +1589,9 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
      * Returns the thread id for the given thread.  We must access
      * this directly rather than via method Thread.getId() because
      * getId() is not final, and has been known to be overridden in
-     * ways that do not preserve unique mappings.
+     * ways that do not preserve unique mappings. <p>
+     * 
+     * 获取指定线程的 id
      */
     static final long getThreadId(Thread thread) {
         return UNSAFE.getLongVolatile(thread, TID_OFFSET);
@@ -1569,8 +1604,7 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
         try {
             UNSAFE = sun.misc.Unsafe.getUnsafe();
             Class<?> tk = Thread.class;
-            TID_OFFSET = UNSAFE.objectFieldOffset
-                (tk.getDeclaredField("tid"));
+            TID_OFFSET = UNSAFE.objectFieldOffset(tk.getDeclaredField("tid"));
         } catch (Exception e) {
             throw new Error(e);
         }

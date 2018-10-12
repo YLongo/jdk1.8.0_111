@@ -1601,8 +1601,9 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      */
     final boolean apparentlyFirstQueuedIsExclusive() {
         Node h, s;
+        // TODO 这个判断是什么意思？
         return (h = head) != null 
-                && (s = h.next) != null 
+                && (s = h.next) != null // 
                 && !s.isShared()         
                 && s.thread != null;
     }
