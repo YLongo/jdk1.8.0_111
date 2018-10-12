@@ -886,7 +886,10 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
          *
          * <p>If the write lock is held by another thread then
          * this method will return immediately with the value
-         * {@code false}.
+         * {@code false}. <p>
+         * 
+         * 如果其它线程没有持有写锁，则获取读锁成功，直接返回 true。<br>
+         * 如果其它线程持有了写锁，则获取读锁失败，直接返回 false。
          *
          * @return {@code true} if the read lock was acquired
          */
