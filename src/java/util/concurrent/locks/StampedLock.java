@@ -114,8 +114,7 @@ import java.util.concurrent.locks.LockSupport;
  *  在获取到一个非 0 的 stamp 后，在写模式下没有获取到锁时，#validate 才会返回 true。<br>
  *  这种模式可以看作为一个极度脆弱的读锁，因为它随时可以被写操作中断。<br>
  *  通常用于简短的读代码片段，可以减少竞争，提高吞吐量。<br>
- *  
- *  
+ *  需要将数据先读取出来，保存在本地变量中，在 #validate 之后使用。<br>
  *  </li>
  *  
  * </ul>
@@ -323,14 +322,35 @@ public class StampedLock implements java.io.Serializable {
 
     // Values for lock state and stamp operations
     private static final long RUNIT = 1L;
-    private static final long WBIT  = 1L << LG_READERS;
-    private static final long RBITS = WBIT - 1L;
-    private static final long RFULL = RBITS - 1L;
-    private static final long ABITS = RBITS | WBIT;
+    
+    /**
+     * 1000 0000
+     */
+    private static final long WBIT  = 1L << LG_READERS; // 128
+    
+    /**
+     * 0111 1111
+     */
+    private static final long RBITS = WBIT - 1L;        // 127
+    
+    /**
+     * 0111 1110
+     */
+    private static final long RFULL = RBITS - 1L;       // 126
+    
+    /**
+     * 1111 1111
+     */
+    private static final long ABITS = RBITS | WBIT;     // 255
+    
     private static final long SBITS = ~RBITS; // note overlap with ABITS
 
     // Initial value for lock state; avoid failure value zero
-    private static final long ORIGIN = WBIT << 1;
+    
+    /**
+     * 1000 0000
+     */
+    private static final long ORIGIN = WBIT << 1;       // 128
 
     // Special value from cancelled acquire methods so caller can throw IE
     private static final long INTERRUPTED = 1L;
@@ -364,8 +384,14 @@ public class StampedLock implements java.io.Serializable {
     transient WriteLockView writeLockView;
     transient ReadWriteLockView readWriteLockView;
 
-    /** Lock sequence/state */
+    /** 
+     * Lock sequence/state <p>
+     * 
+     * 锁的状态
+     * 
+     */
     private transient volatile long state;
+    
     /** extra reader count when state read count saturated */
     private transient int readerOverflow;
 
@@ -378,15 +404,17 @@ public class StampedLock implements java.io.Serializable {
 
     /**
      * Exclusively acquires the lock, blocking if necessary
-     * until available.
+     * until available. <p>
+     * 
+     * 独占锁，会阻塞，直到获取到锁
      *
      * @return a stamp that can be used to unlock or convert mode
      */
     public long writeLock() {
         long s, next;  // bypass acquireWrite in fully unlocked case only
-        return ((((s = state) & ABITS) == 0L &&
-                 U.compareAndSwapLong(this, STATE, s, next = s + WBIT)) ?
-                next : acquireWrite(false, 0L));
+        return ((((s = state) & ABITS) == 0L && U.compareAndSwapLong(this, STATE, s, next = s + WBIT)) 
+        		? next 
+        				: acquireWrite(false, 0L));
     }
 
     /**
@@ -1426,8 +1454,8 @@ public class StampedLock implements java.io.Serializable {
             U = sun.misc.Unsafe.getUnsafe();
             Class<?> k = StampedLock.class;
             Class<?> wk = WNode.class;
-            STATE = U.objectFieldOffset
-                (k.getDeclaredField("state"));
+            STATE = U.objectFieldOffset(k.getDeclaredField("state"));
+            
             WHEAD = U.objectFieldOffset
                 (k.getDeclaredField("whead"));
             WTAIL = U.objectFieldOffset
