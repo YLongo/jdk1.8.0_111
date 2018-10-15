@@ -49,8 +49,16 @@ import java.util.concurrent.locks.LockSupport;
  * these methods may instead return the special value zero to
  * represent failure to acquire access. Lock release and conversion
  * methods require stamps as arguments, and fail if they do not match
- * the state of the lock. The three modes are:
- *
+ * the state of the lock. <p>
+ * 
+ * 有三种模式用于控制读写操作。 StampedLock 的状态由 version (版本) 与 mode (模式) 组成。<br>
+ * 获取锁的方法会返回一个 stamp (标志) 来表示对锁的状态的控制。<br>
+ * "try" 相关的方法访问锁失败会返回 0。<br>
+ * 锁的释放与转换方法需要 stamp 作为参数。<p>
+ * 
+ * 
+ * The three modes are:<br>
+ * 三种锁为：
  * <ul>
  *
  *  <li><b>Writing.</b> Method {@link #writeLock} possibly blocks
@@ -58,7 +66,7 @@ import java.util.concurrent.locks.LockSupport;
  *   in method {@link #unlockWrite} to release the lock. Untimed and
  *   timed versions of {@code tryWriteLock} are also provided. When
  *   the lock is held in write mode, no read locks may be obtained,
- *   and all optimistic read validations will fail.  </li>
+ *   and all optimistic read validations will fail. </li>
  *
  *  <li><b>Reading.</b> Method {@link #readLock} possibly blocks
  *   waiting for non-exclusive access, returning a stamp that can be
@@ -83,6 +91,33 @@ import java.util.concurrent.locks.LockSupport;
  *   reference, and then accessing one of its fields, elements or
  *   methods. </li>
  *
+ * </ul>
+ *  
+ * <ul>
+ *   <li>
+ *  写：<br>
+ *  #writeLock 方法通过独占模式访问，会阻塞其它的获取锁的请求，所有乐观锁的验证都将失败。<br>
+ *  返回的 stamp 可以用于 #unlockWrite 方法。
+ *  提供了计时与不计时的 #tryWriteLock 方法。
+ *  </li>
+ *  
+ *  <li>
+ *  读：<br>
+ *  #readLock 方法在非独占模式下可能会被阻塞(因为其它线程获取到了写锁)。<br>
+ *  返回的 stamp 可以用于 #unlockWrite 方法。
+ *  提供了计时与不计时的 #tryWriteLock 方法。
+ *  </li>
+ *  
+ *  <li>
+ *  乐观读：<br>
+ *  在写模式下，没有获取到锁时，#tryOptimisticRead 会返回一个非 0 的 stamp。<br>
+ *  在获取到一个非 0 的 stamp 后，在写模式下没有获取到锁时，#validate 才会返回 true。<br>
+ *  这种模式可以看作为一个极度脆弱的读锁，因为它随时可以被写操作中断。<br>
+ *  通常用于简短的读代码片段，可以减少竞争，提高吞吐量。<br>
+ *  
+ *  
+ *  </li>
+ *  
  * </ul>
  *
  * <p>This class also supports methods that conditionally provide
