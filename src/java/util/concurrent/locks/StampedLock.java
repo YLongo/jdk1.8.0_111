@@ -302,10 +302,18 @@ public class StampedLock implements java.io.Serializable {
 
     private static final long serialVersionUID = -6001602636862214147L;
 
-    /** Number of processors, for spin control */
+    /** 
+     * Number of processors, for spin control <p>
+     * 
+     * 处理器的个数 (在我的电脑上，这个值为 8)，用于控制自旋
+     */
     private static final int NCPU = Runtime.getRuntime().availableProcessors();
 
-    /** Maximum number of retries before enqueuing on acquisition */
+    /** 
+     * Maximum number of retries before enqueuing on acquisition <p> 
+     * 
+     * 在入队之前，最大的尝试获取次数 (在我的电脑上，这个值为 64。应该一般情况下这个值都为 64，因为一个处理器的电脑应该很少见了)。
+     */
     private static final int SPINS = (NCPU > 1) ? 1 << 6 : 0;
 
     /** Maximum number of retries before blocking at head on acquisition */
@@ -343,14 +351,17 @@ public class StampedLock implements java.io.Serializable {
      */
     private static final long ABITS = RBITS | WBIT;     // 255
     
+    /**
+     * 1111 1111 1111 1111 1111 1111 1000 0000
+     */
     private static final long SBITS = ~RBITS; // note overlap with ABITS
 
     // Initial value for lock state; avoid failure value zero
     
     /**
-     * 1000 0000
+     * 1 0000 0000
      */
-    private static final long ORIGIN = WBIT << 1;       // 128
+    private static final long ORIGIN = WBIT << 1;       // 256
 
     // Special value from cancelled acquire methods so caller can throw IE
     private static final long INTERRUPTED = 1L;
@@ -371,7 +382,10 @@ public class StampedLock implements java.io.Serializable {
         volatile Thread thread;   // non-null while possibly parked
         volatile int status;      // 0, WAITING, or CANCELLED
         final int mode;           // RMODE or WMODE
-        WNode(int m, WNode p) { mode = m; prev = p; }
+        WNode(int m, WNode p) { 
+        	mode = m; 
+        	prev = p; 
+        }
     }
 
     /** Head of CLH queue */
@@ -387,7 +401,7 @@ public class StampedLock implements java.io.Serializable {
     /** 
      * Lock sequence/state <p>
      * 
-     * 锁的状态
+     * 锁的状态。初始值为 256 (1 0000 0000)
      * 
      */
     private transient volatile long state;
@@ -411,7 +425,17 @@ public class StampedLock implements java.io.Serializable {
      * @return a stamp that can be used to unlock or convert mode
      */
     public long writeLock() {
-        long s, next;  // bypass acquireWrite in fully unlocked case only
+    	/*
+    	 * s = state = 256 (1 0000 0000)
+    	 * next = s + WBIT = 256 + 128 = 384 (‭1 1000 0000‬)
+    	 */
+        long s, next;
+        
+        /*
+         * bypass acquireWrite in fully unlocked case only
+         * 
+         * 1 0000 0000 & 0 1111 1111 = 0 0000 0000
+         */
         return ((((s = state) & ABITS) == 0L && U.compareAndSwapLong(this, STATE, s, next = s + WBIT)) 
         		? next 
         				: acquireWrite(false, 0L));
@@ -603,11 +627,14 @@ public class StampedLock implements java.io.Serializable {
      */
     public void unlockWrite(long stamp) {
         WNode h;
-        if (state != stamp || (stamp & WBIT) == 0L)
-            throw new IllegalMonitorStateException();
+        // 如果获取的印记不是当前线程的印记 或者 获取锁
+        if (state != stamp || (stamp & WBIT) == 0L) {
+        	throw new IllegalMonitorStateException();
+        }
         state = (stamp += WBIT) == 0L ? ORIGIN : stamp;
-        if ((h = whead) != null && h.status != 0)
-            release(h);
+        if ((h = whead) != null && h.status != 0) {
+        	release(h);
+        }
     }
 
     /**
@@ -1091,36 +1118,56 @@ public class StampedLock implements java.io.Serializable {
      * See above for explanation.
      *
      * @param interruptible true if should check interrupts and if so
-     * return INTERRUPTED
+     * return INTERRUPTED <p> 是否可中断
      * @param deadline if nonzero, the System.nanoTime value to timeout
-     * at (and return zero)
+     * at (and return zero) <p> 是否设置超时时间。0 表示不超时
      * @return next state, or INTERRUPTED
      */
     private long acquireWrite(boolean interruptible, long deadline) {
         WNode node = null, p;
-        for (int spins = -1;;) { // spin while enqueuing
+        for (int spins = -1;;) { // spin while enqueuing 入队时旋转
             long m, s, ns;
-            if ((m = (s = state) & ABITS) == 0L) {
-                if (U.compareAndSwapLong(this, STATE, s, ns = s + WBIT))
-                    return ns;
-            }
-            else if (spins < 0)
-                spins = (m == WBIT && wtail == whead) ? SPINS : 0;
-            else if (spins > 0) {
-                if (LockSupport.nextSecondarySeed() >= 0)
-                    --spins;
-            }
-            else if ((p = wtail) == null) { // initialize queue
+            
+            /*
+             * 如果有一个线程获取了写锁，那么 state 的值变成了 384 (1 1000 0000)
+             * m = 384(1 1000 0000) & 255(0 1111 1111) = 128(‭0 1000 0000‬)
+             */
+            if ((m = (s = state) & ABITS) == 0L) { // 第一次循环
+                if (U.compareAndSwapLong(this, STATE, s, ns = s + WBIT)) {
+                	return ns;
+                }
+            } else if (spins < 0) { // 第二次循环，将 spins 的值变成了 64
+            	
+            	spins = (m == WBIT && wtail == whead) ? SPINS : 0;
+            	
+            } else if (spins > 0) { // 第三次循环，自旋 64 次
+                if (LockSupport.nextSecondarySeed() >= 0) {
+                	--spins;
+                }
+            } else if ((p = wtail) == null) { // initialize queue 初始化队列。第四次循环 (没有把自旋的次数包括在内)
+            	// 新建一个等待节点
                 WNode hd = new WNode(WMODE, null);
-                if (U.compareAndSwapObject(this, WHEAD, null, hd))
-                    wtail = hd;
-            }
-            else if (node == null)
-                node = new WNode(WMODE, p);
-            else if (node.prev != p)
-                node.prev = p;
-            else if (U.compareAndSwapObject(this, WTAIL, p, node)) {
+                
+                // 队列的头部与尾部同时指向该结点
+                if (U.compareAndSwapObject(this, WHEAD, null, hd)) {
+                	wtail = hd;
+                }
+            } else if (node == null) { // 第五次循环。在经过上一个 else if 的时候，p 已经指向了 wtail
+            	// 新建一个等待节点，同时将该节点的前驱节点设置为 wtail (其实就是 hd)
+            	node = new WNode(WMODE, p); 
+            } else if (node.prev != p) { // TODO 这个条件什么时候会成立？
+            	node.prev = p;
+            } else if (U.compareAndSwapObject(this, WTAIL, p, node)) { // 第六次循环。wtail 指向了 node
+            	// 将 hd 的后继节点设置为 node
                 p.next = node;
+                
+                /*
+                 * 这个时候队列已经形成。 (不懂的时候画一下图)
+                 * ------  prev  --------
+                 * | hd |  --->  | node |
+                 * |    |  <---  |      |
+                 * ------  next  --------
+                 */
                 break;
             }
         }
@@ -1128,62 +1175,62 @@ public class StampedLock implements java.io.Serializable {
         for (int spins = -1;;) {
             WNode h, np, pp; int ps;
             if ((h = whead) == p) {
-                if (spins < 0)
-                    spins = HEAD_SPINS;
-                else if (spins < MAX_HEAD_SPINS)
-                    spins <<= 1;
+                if (spins < 0) {
+                	spins = HEAD_SPINS;
+                } else if (spins < MAX_HEAD_SPINS) {
+                	spins <<= 1;
+                }
                 for (int k = spins;;) { // spin at head
                     long s, ns;
                     if (((s = state) & ABITS) == 0L) {
-                        if (U.compareAndSwapLong(this, STATE, s,
-                                                 ns = s + WBIT)) {
+                        if (U.compareAndSwapLong(this, STATE, s, ns = s + WBIT)) {
                             whead = node;
                             node.prev = null;
                             return ns;
                         }
+                    } else if (LockSupport.nextSecondarySeed() >= 0 && --k <= 0) {
+                    	break;
                     }
-                    else if (LockSupport.nextSecondarySeed() >= 0 &&
-                             --k <= 0)
-                        break;
                 }
             }
             else if (h != null) { // help release stale waiters
                 WNode c; Thread w;
                 while ((c = h.cowait) != null) {
-                    if (U.compareAndSwapObject(h, WCOWAIT, c, c.cowait) &&
-                        (w = c.thread) != null)
-                        U.unpark(w);
+                    if (U.compareAndSwapObject(h, WCOWAIT, c, c.cowait) && (w = c.thread) != null) {
+                    	U.unpark(w);
+                    }
                 }
             }
             if (whead == h) {
                 if ((np = node.prev) != p) {
-                    if (np != null)
-                        (p = np).next = node;   // stale
-                }
-                else if ((ps = p.status) == 0)
-                    U.compareAndSwapInt(p, WSTATUS, 0, WAITING);
-                else if (ps == CANCELLED) {
+                    if (np != null) {
+                    	(p = np).next = node;   // stale
+                    }
+                } else if ((ps = p.status) == 0) {
+                	U.compareAndSwapInt(p, WSTATUS, 0, WAITING);
+                } else if (ps == CANCELLED) {
                     if ((pp = p.prev) != null) {
                         node.prev = pp;
                         pp.next = node;
                     }
-                }
-                else {
+                } else {
                     long time; // 0 argument to park means no timeout
-                    if (deadline == 0L)
-                        time = 0L;
-                    else if ((time = deadline - System.nanoTime()) <= 0L)
-                        return cancelWaiter(node, node, false);
+                    if (deadline == 0L) {
+                    	time = 0L;
+                    } else if ((time = deadline - System.nanoTime()) <= 0L) {
+                    	return cancelWaiter(node, node, false);
+                    }
                     Thread wt = Thread.currentThread();
                     U.putObject(wt, PARKBLOCKER, this);
                     node.thread = wt;
-                    if (p.status < 0 && (p != h || (state & ABITS) != 0L) &&
-                        whead == h && node.prev == p)
-                        U.park(false, time);  // emulate LockSupport.park
+                    if (p.status < 0 && (p != h || (state & ABITS) != 0L) && whead == h && node.prev == p) {
+                    	U.park(false, time);  // emulate LockSupport.park
+                    }
                     node.thread = null;
                     U.putObject(wt, PARKBLOCKER, null);
-                    if (interruptible && Thread.interrupted())
-                        return cancelWaiter(node, node, true);
+                    if (interruptible && Thread.interrupted()) {
+                    	return cancelWaiter(node, node, true);
+                    }
                 }
             }
         }

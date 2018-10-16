@@ -373,7 +373,9 @@ public class LockSupport {
 
     /**
      * Returns the pseudo-randomly initialized or updated secondary seed.
-     * Copied from ThreadLocalRandom due to package access restrictions.
+     * Copied from ThreadLocalRandom due to package access restrictions. <p>
+     * 
+     * 获取一个伪随机数的种子，返回值大于 0。从 ThreadLocalRandom 里面拷过来的。
      */
     static final int nextSecondarySeed() {
         int r;
