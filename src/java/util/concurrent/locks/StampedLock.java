@@ -316,10 +316,18 @@ public class StampedLock implements java.io.Serializable {
      */
     private static final int SPINS = (NCPU > 1) ? 1 << 6 : 0;
 
-    /** Maximum number of retries before blocking at head on acquisition */
+    /** 
+     * Maximum number of retries before blocking at head on acquisition 
+     * 
+     * 堵塞在队列头部的最大重试次数(在我的电脑上，这个值为 1024)。
+     */
     private static final int HEAD_SPINS = (NCPU > 1) ? 1 << 10 : 0;
 
-    /** Maximum number of retries before re-blocking */
+    /** 
+     * Maximum number of retries before re-blocking 
+     * 
+     * 在重新阻塞之前的重试次数(在我的电脑上，这个值为 65536)。
+     */
     private static final int MAX_HEAD_SPINS = (NCPU > 1) ? 1 << 16 : 0;
 
     /** The period for yielding when waiting for overflow spinlock */
@@ -1163,10 +1171,10 @@ public class StampedLock implements java.io.Serializable {
                 
                 /*
                  * 这个时候队列已经形成。 (不懂的时候画一下图)
-                 * ------  prev  --------
-                 * | hd |  --->  | node |
-                 * |    |  <---  |      |
-                 * ------  next  --------
+                 *      prev ------  prev  -------- wtail
+                 * null <--- | hd |  <---  | node | <---
+                 *      p -> |    |  --->  |      | ---> null 
+                 *  whead -> ------  next  -------- next
                  */
                 break;
             }
@@ -1174,13 +1182,13 @@ public class StampedLock implements java.io.Serializable {
 
         for (int spins = -1;;) {
             WNode h, np, pp; int ps;
-            if ((h = whead) == p) {
+            if ((h = whead) == p) { // 从上面的自旋跳出后的第一次循环
                 if (spins < 0) {
-                	spins = HEAD_SPINS;
-                } else if (spins < MAX_HEAD_SPINS) {
+                	spins = HEAD_SPINS; // 1024
+                } else if (spins < MAX_HEAD_SPINS) { // 65536
                 	spins <<= 1;
                 }
-                for (int k = spins;;) { // spin at head
+                for (int k = spins;;) { // spin at head 在队列头部自旋
                     long s, ns;
                     if (((s = state) & ABITS) == 0L) {
                         if (U.compareAndSwapLong(this, STATE, s, ns = s + WBIT)) {
@@ -1214,7 +1222,7 @@ public class StampedLock implements java.io.Serializable {
                         pp.next = node;
                     }
                 } else {
-                    long time; // 0 argument to park means no timeout
+                    long time; // 0 argument to park means no timeout 参数 0 表示不会超时
                     if (deadline == 0L) {
                     	time = 0L;
                     } else if ((time = deadline - System.nanoTime()) <= 0L) {
