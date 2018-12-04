@@ -57,8 +57,15 @@ import java.util.function.Consumer;
  * A {@code ConcurrentLinkedQueue} is an appropriate choice when
  * many threads will share access to a common collection.
  * Like most other concurrent collection implementations, this class
- * does not permit the use of {@code null} elements.
- *
+ * does not permit the use of {@code null} elements. <p>
+ * 
+ * 无边界的、基于链接节点的、线程安全的队列。
+ * 队列中的元素按照 FIFO 的顺序排列。
+ * 队列中的头元素表示在队列中呆的时候最久的。尾元素表示呆的时间最短的。
+ * 新元素在队列的尾部被插入。检索操作会获取队列头部的元素。
+ * 当多个线程访问同一个集合时，ConcurrentLinkedQueue 是个合适的选择。
+ * 跟其它大多数并发集合的实现类似，该类也不允许使用 null 元素。
+ * 
  * <p>This implementation employs an efficient <em>non-blocking</em>
  * algorithm based on one described in <a
  * href="http://www.cs.rochester.edu/u/michael/PODC96.html"> Simple,
