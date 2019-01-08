@@ -325,38 +325,54 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E>
 
     /**
      * Inserts the specified element at the tail of this queue.
-     * As the queue is unbounded, this method will never return {@code false}.
+     * As the queue is unbounded, this method will never return {@code false}. <p>
+     * 
+     * 在队列的尾部插入一个元素，由于队列是无界的，所有该方法永远不会返回 false
      *
      * @return {@code true} (as specified by {@link Queue#offer})
-     * @throws NullPointerException if the specified element is null
+     * @throws NullPointerException if the specified element is null 如果指定的元素为 null
      */
     public boolean offer(E e) {
+        
+        // 1. 检查是否为 null
         checkNotNull(e);
+        
+        // 2. 
         final Node<E> newNode = new Node<E>(e);
 
+        // 3. 初始状态：t、p 都指向尾结点
         for (Node<E> t = tail, p = t;;) {
+            
             Node<E> q = p.next;
-            if (q == null) {
+            
+            // 4. 
+            if (q == null) { // q == null 说明 p 是尾结点
+                
                 // p is last node
+                // 5. 设置 p 节点的下一个节点。如果设置失败，则会一直进行尝试
                 if (p.casNext(null, newNode)) {
                     // Successful CAS is the linearization point
                     // for e to become an element of this queue,
                     // and for newNode to become "live".
-                    if (p != t) // hop two nodes at a time
+                    // 6. CAS 成功则表示 e 已经成功插入到队列中
+                    if (p != t) {
+                        // hop two nodes at a time
+                        // 一次跳跃两个节点
                         casTail(t, newNode);  // Failure is OK.
+                    }
                     return true;
                 }
                 // Lost CAS race to another thread; re-read next
-            }
-            else if (p == q)
+            } else if (p == q) { // 7.
                 // We have fallen off list.  If tail is unchanged, it
                 // will also be off-list, in which case we need to
                 // jump to head, from which all live nodes are always
                 // reachable.  Else the new tail is a better bet.
                 p = (t != (t = tail)) ? t : head;
-            else
+            } else { // 8.
                 // Check for tail updates after two hops.
                 p = (p != t && t != (t = tail)) ? t : q;
+            }
         }
     }
 
