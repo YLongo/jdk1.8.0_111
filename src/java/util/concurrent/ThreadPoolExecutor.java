@@ -1287,20 +1287,34 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      * parameters.
      *
      * @param corePoolSize the number of threads to keep in the pool, even
-     *        if they are idle, unless {@code allowCoreThreadTimeOut} is set
+     *        if they are idle, unless {@code allowCoreThreadTimeOut} is set <br>
+     *                     会在线程池中持续存在的线程数，即时是处于空闲状态。除非设置了 {@code allowCoreThreadTimeOut}
+     * <p/>
      * @param maximumPoolSize the maximum number of threads to allow in the
-     *        pool
+     *        pool <br>
+     *                        线程池允许的最大线程数 (当线程数量达到 corePoolSize，并且 workQueue 队列满了之后，才会继续创建线程)
+     * <p/>
      * @param keepAliveTime when the number of threads is greater than
      *        the core, this is the maximum time that excess idle threads
-     *        will wait for new tasks before terminating.
-     * @param unit the time unit for the {@code keepAliveTime} argument
+     *        will wait for new tasks before terminating. <br>
+     *                      当线程数大于核心线程数时，空闲线程在等待这么久之后会被销毁
+     * <p/>
+     * @param unit the time unit for the {@code keepAliveTime} argument <br>
+     *             {@code keepAliveTime} 参数的时间单位
+     * <p/>
      * @param workQueue the queue to use for holding tasks before they are
      *        executed.  This queue will hold only the {@code Runnable}
-     *        tasks submitted by the {@code execute} method.
+     *        tasks submitted by the {@code execute} method. <br>
+     *                  任务被执行前放在这里。这个队列只会保持通过 {@code execute} 方法提交的 {@code Runnable} 任务
+     * <p/>
      * @param threadFactory the factory to use when the executor
-     *        creates a new thread
+     *        creates a new thread <br>
+     *                      创建线程时的工厂
+     * <p/>
      * @param handler the handler to use when execution is blocked
-     *        because the thread bounds and queue capacities are reached
+     *        because the thread bounds and queue capacities are reached <br>
+     *                当线程数超过界限，以及队列满了之后，将会执行拒绝策略
+     * <p/>
      * @throws IllegalArgumentException if one of the following holds:<br>
      *         {@code corePoolSize < 0}<br>
      *         {@code keepAliveTime < 0}<br>
