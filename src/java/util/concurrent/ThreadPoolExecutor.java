@@ -95,6 +95,7 @@ import java.util.*;
  * started only when new tasks arrive, but this can be overridden
  * dynamically using method {@link #prestartCoreThread} or {@link
  * #prestartAllCoreThreads}.  You probably want to prestart threads if
+ * #prestartAllCoreThreads}.  You probably want to prestart threads if
  * you construct the pool with a non-empty queue. </dd>
  *
  * <dt>Creating new threads</dt>
@@ -894,26 +895,33 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
     private boolean addWorker(Runnable firstTask, boolean core) {
         retry:
         for (;;) {
+            // 线程池当前的状态
             int c = ctl.get();
             int rs = runStateOf(c);
 
             // Check if queue empty only if necessary.
-            if (rs >= SHUTDOWN &&
-                ! (rs == SHUTDOWN &&
-                   firstTask == null &&
-                   ! workQueue.isEmpty()))
-                return false;
+            if (rs >= SHUTDOWN 
+                    && !(rs == SHUTDOWN && firstTask == null && !workQueue.isEmpty())) {
+                return false;                
+            }
 
             for (;;) {
+                // 当前工作的线程数
                 int wc = workerCountOf(c);
-                if (wc >= CAPACITY ||
-                    wc >= (core ? corePoolSize : maximumPoolSize))
-                    return false;
-                if (compareAndIncrementWorkerCount(c))
-                    break retry;
+                
+                // 如果当前工作线程数大于最大容量，或者核心线程数为 0，那么则添加失败
+                if (wc >= CAPACITY || wc >= (core ? corePoolSize : maximumPoolSize)) {
+                    return false;                    
+                }
+                
+                if (compareAndIncrementWorkerCount(c)) {
+                    break retry;                    
+                }
+                
                 c = ctl.get();  // Re-read ctl
-                if (runStateOf(c) != rs)
+                if (runStateOf(c) != rs) {                    
                     continue retry;
+                }
                 // else CAS failed due to workerCount change; retry inner loop
             }
         }
@@ -1172,28 +1180,18 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      * @param corePoolSize the number of threads to keep in the pool, even
      *        if they are idle, unless {@code allowCoreThreadTimeOut} is set <p>
      *        
-     *        线程池中允许存活的核心线程数。即使是处于空闲状态也会存活，除非设置了 allowCoreThreadTimeOut 
-     *        
      * @param maximumPoolSize the maximum number of threads to allow in the
      *        pool <p>
-     *        
-     *        线程池中允许存活的最大线程数。
      *        
      * @param keepAliveTime when the number of threads is greater than
      *        the core, this is the maximum time that excess idle threads
      *        will wait for new tasks before terminating. <p>
      *        
-     *        当线程数超过指定的核心线程数时，超出部分的线程允许空闲的时间
-     *        
      * @param unit the time unit for the {@code keepAliveTime} argument <p>
-     * 
-     * 		  keepAliveTime 的时间单位
      * 
      * @param workQueue the queue to use for holding tasks before they are
      *        executed.  This queue will hold only the {@code Runnable}
      *        tasks submitted by the {@code execute} method. <p>
-     *        
-     *        任务被执行前存放在 workQueue 中。只有调用了 execute 方法的任务才会被放在这里。
      *        
      * @throws IllegalArgumentException if one of the following holds:<br>
      *         {@code corePoolSize < 0}<br>
@@ -1288,32 +1286,32 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      *
      * @param corePoolSize the number of threads to keep in the pool, even
      *        if they are idle, unless {@code allowCoreThreadTimeOut} is set <br>
-     *                     会在线程池中持续存在的线程数，即时是处于空闲状态。除非设置了 {@code allowCoreThreadTimeOut}
+     *        线程池中允许存活的核心线程数，即时是处于空闲状态也会存活。除非设置了 {@code allowCoreThreadTimeOut}。
      * <p/>
      * @param maximumPoolSize the maximum number of threads to allow in the
      *        pool <br>
-     *                        线程池允许的最大线程数 (当线程数量达到 corePoolSize，并且 workQueue 队列满了之后，才会继续创建线程)
+     *        线程池允许的最大线程数 (当线程数量达到 corePoolSize，并且 workQueue 队列满了之后，才会继续创建线程)。
      * <p/>
      * @param keepAliveTime when the number of threads is greater than
      *        the core, this is the maximum time that excess idle threads
      *        will wait for new tasks before terminating. <br>
-     *                      当线程数大于核心线程数时，空闲线程在等待这么久之后会被销毁
+     *        当线程数大于核心线程数时，空闲线程在等待这么久之后会被销毁
      * <p/>
      * @param unit the time unit for the {@code keepAliveTime} argument <br>
-     *             {@code keepAliveTime} 参数的时间单位
+     *        {@code keepAliveTime} 参数的时间单位
      * <p/>
      * @param workQueue the queue to use for holding tasks before they are
      *        executed.  This queue will hold only the {@code Runnable}
      *        tasks submitted by the {@code execute} method. <br>
-     *                  任务被执行前放在这里。这个队列只会保持通过 {@code execute} 方法提交的 {@code Runnable} 任务
+     *        任务被执行前存放在 workQueue 中。这个队列只会保持通过 {@code execute} 方法提交的 {@code Runnable} 任务
      * <p/>
      * @param threadFactory the factory to use when the executor
      *        creates a new thread <br>
-     *                      创建线程时的工厂
+     *        创建线程时的工厂
      * <p/>
      * @param handler the handler to use when execution is blocked
      *        because the thread bounds and queue capacities are reached <br>
-     *                当线程数超过界限，以及队列满了之后，将会执行拒绝策略
+     *        当线程数超过界限，以及队列满了之后，将会执行拒绝策略
      * <p/>
      * @throws IllegalArgumentException if one of the following holds:<br>
      *         {@code corePoolSize < 0}<br>
@@ -1628,14 +1626,17 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
     /**
      * Starts all core threads, causing them to idly wait for work. This
      * overrides the default policy of starting core threads only when
-     * new tasks are executed.
+     * new tasks are executed. <p>
+     * 
+     * 开启所有的核心线程，等待任务 (默认为来一个任务才开启一个线程)。
      *
      * @return the number of threads started
      */
     public int prestartAllCoreThreads() {
         int n = 0;
-        while (addWorker(null, true))
+        while (addWorker(null, true)) {
             ++n;
+        }
         return n;
     }
 
