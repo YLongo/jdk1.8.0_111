@@ -34,15 +34,12 @@
  */
 
 package java.util.concurrent;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.security.AccessControlContext;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import java.security.PrivilegedExceptionAction;
-import java.security.PrivilegedActionException;
-import java.security.AccessControlException;
 import sun.security.util.SecurityConstants;
+
+import java.security.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Factory and utility methods for {@link Executor}, {@link
@@ -173,10 +170,10 @@ public class Executors {
     public static ExecutorService newSingleThreadExecutor() {
         return new FinalizableDelegatedExecutorService(
         		new ThreadPoolExecutor(1, 
-        							   1, 
+        							   1,  // 核心线程池跟最大线程池都为 1
         							   0L, 
         							   TimeUnit.MILLISECONDS, 
-        							   new LinkedBlockingQueue<Runnable>()
+        							   new LinkedBlockingQueue<Runnable>() // 阻塞队列的长度为 Integer.MAX_VALUE
         							  ));
     }
 
@@ -257,8 +254,7 @@ public class Executors {
      * @return the newly created scheduled executor
      */
     public static ScheduledExecutorService newSingleThreadScheduledExecutor() {
-        return new DelegatedScheduledExecutorService
-            (new ScheduledThreadPoolExecutor(1));
+        return new DelegatedScheduledExecutorService(new ScheduledThreadPoolExecutor(1));
     }
 
     /**
