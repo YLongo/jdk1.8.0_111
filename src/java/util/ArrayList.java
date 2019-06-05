@@ -484,6 +484,8 @@ public class ArrayList<E> extends AbstractList<E>
     }
 
     /**
+     *
+     * 在指定位置添加元素 <br>
      * Inserts the specified element at the specified position in this
      * list. Shifts the element currently at that position (if any) and
      * any subsequent elements to the right (adds one to their indices).
@@ -625,15 +627,22 @@ public class ArrayList<E> extends AbstractList<E>
 
         Object[] a = c.toArray();
         int numNew = a.length;
+
+        // 先进行扩容
         ensureCapacityInternal(size + numNew);  // Increments modCount
 
         int numMoved = size - index;
-        if (numMoved > 0)
-            System.arraycopy(elementData, index, elementData, index + numNew,
-                             numMoved);
 
+        // 大于0表示需要在列表中间插入元素，则需要把 index 后的元素往后面移动
+        if (numMoved > 0) {
+            System.arraycopy(elementData, index, elementData, index + numNew, numMoved);
+        }
+
+        // 等于0就直接将新列表的元素在原有列表后进行追加
         System.arraycopy(a, 0, elementData, index, numNew);
+
         size += numNew;
+
         return numNew != 0;
     }
 
@@ -654,10 +663,12 @@ public class ArrayList<E> extends AbstractList<E>
     protected void removeRange(int fromIndex, int toIndex) {
         modCount++;
         int numMoved = size - toIndex;
-        System.arraycopy(elementData, toIndex, elementData, fromIndex,
-                         numMoved);
+
+        // 直接将toIndex之后的元素移动到fromIndex之后
+        System.arraycopy(elementData, toIndex, elementData, fromIndex, numMoved);
 
         // clear to let GC do its work
+        // 将列表多余的空位全部赋值为null
         int newSize = size - (toIndex-fromIndex);
         for (int i = newSize; i < size; i++) {
             elementData[i] = null;
@@ -695,6 +706,7 @@ public class ArrayList<E> extends AbstractList<E>
     }
 
     /**
+     * 移除列表中包含指定列表中的元素
      * Removes from this list all of its elements that are contained in the
      * specified collection.
      *
@@ -740,22 +752,35 @@ public class ArrayList<E> extends AbstractList<E>
         int r = 0, w = 0;
         boolean modified = false;
         try {
-            for (; r < size; r++)
-                if (c.contains(elementData[r]) == complement)
+            for (; r < size; r++) {
+                /*
+                 * 假设第一次循环列表不包含某个元素，开始时：r=0，w=0，结束时：r=1，w=1
+                 * 如果第二次循环列表包含了某个元素，则结束时：r=2，w=1，这个时候 elementData[1] 包含了某个元素
+                 * 假设第三次循环列表不包含某个元素，则会将 elementData[r=2] 的元素赋值给 elementData[w=1]，也就是将前一次循环相同的元素给去掉了
+                 * 依次类推
+                 */
+                // 如果指定列表中不包含某个元素
+                if (c.contains(elementData[r]) == complement) {
                     elementData[w++] = elementData[r];
+                }
+            }
         } finally {
             // Preserve behavioral compatibility with AbstractCollection,
             // even if c.contains() throws.
+            /*
+             * 只有在抛出异常的时候 r 才不等于 size
+             * 这个是为了保证即使抛出异常，元素也不受影响
+             */
             if (r != size) {
-                System.arraycopy(elementData, r,
-                                 elementData, w,
-                                 size - r);
+                System.arraycopy(elementData, r, elementData, w, size - r);
                 w += size - r;
             }
+            // 将最后相同的元素给赋值为 null，也就是去掉相同的元素
             if (w != size) {
                 // clear to let GC do its work
-                for (int i = w; i < size; i++)
+                for (int i = w; i < size; i++) {
                     elementData[i] = null;
+                }
                 modCount += size - w;
                 size = w;
                 modified = true;
@@ -772,8 +797,8 @@ public class ArrayList<E> extends AbstractList<E>
      *             instance is emitted (int), followed by all of its elements
      *             (each an <tt>Object</tt>) in the proper order.
      */
-    private void writeObject(java.io.ObjectOutputStream s)
-        throws java.io.IOException{
+    private void writeObject(java.io.ObjectOutputStream s) throws java.io.IOException{
+
         // Write out element count, and any hidden stuff
         int expectedModCount = modCount;
         s.defaultWriteObject();
@@ -874,18 +899,22 @@ public class ArrayList<E> extends AbstractList<E>
         public E next() {
             checkForComodification();
             int i = cursor;
-            if (i >= size)
+            if (i >= size) {
                 throw new NoSuchElementException();
+            }
             Object[] elementData = ArrayList.this.elementData;
-            if (i >= elementData.length)
+            if (i >= elementData.length) {
                 throw new ConcurrentModificationException();
+            }
             cursor = i + 1;
             return (E) elementData[lastRet = i];
         }
 
         public void remove() {
-            if (lastRet < 0)
+            if (lastRet < 0) {
                 throw new IllegalStateException();
+            }
+
             checkForComodification();
 
             try {
@@ -930,6 +959,7 @@ public class ArrayList<E> extends AbstractList<E>
      * An optimized version of AbstractList.ListItr
      */
     private class ListItr extends Itr implements ListIterator<E> {
+
         ListItr(int index) {
             super();
             cursor = index;
