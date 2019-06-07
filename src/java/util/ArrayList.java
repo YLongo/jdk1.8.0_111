@@ -524,7 +524,7 @@ public class ArrayList<E> extends AbstractList<E>
         if (numMoved > 0) {
             System.arraycopy(elementData, index + 1, elementData, index, numMoved);
         }
-        
+
         elementData[--size] = null; // clear to let GC do its work
 
         return oldValue;
