@@ -514,21 +514,26 @@ public class ArrayList<E> extends AbstractList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
     public E remove(int index) {
+
         rangeCheck(index);
 
         modCount++;
         E oldValue = elementData(index);
 
         int numMoved = size - index - 1;
-        if (numMoved > 0)
-            System.arraycopy(elementData, index+1, elementData, index,
-                             numMoved);
+        if (numMoved > 0) {
+            System.arraycopy(elementData, index + 1, elementData, index, numMoved);
+        }
+        
         elementData[--size] = null; // clear to let GC do its work
 
         return oldValue;
     }
 
     /**
+     * 移除操作，使用equals方法判断元素是否相等。
+     * 当元素为null时，删除列表中第一个为null的元素。 <br>
+     *
      * Removes the first occurrence of the specified element from this list,
      * if it is present.  If the list does not contain the element, it is
      * unchanged.  More formally, removes the element with the lowest index
@@ -563,11 +568,12 @@ public class ArrayList<E> extends AbstractList<E>
      * return the value removed.
      */
     private void fastRemove(int index) {
-        modCount++;
+        modCount++; // 修改次数加1
         int numMoved = size - index - 1;
-        if (numMoved > 0)
-            System.arraycopy(elementData, index+1, elementData, index,
-                             numMoved);
+        if (numMoved > 0) {
+            // 将index后面的元素往前移动一格
+            System.arraycopy(elementData, index + 1, elementData, index, numMoved);
+        }
         elementData[--size] = null; // clear to let GC do its work
     }
 
@@ -887,10 +893,19 @@ public class ArrayList<E> extends AbstractList<E>
      * An optimized version of AbstractList.Itr
      */
     private class Itr implements Iterator<E> {
+        /**
+         * 本地遍历的当前位置
+         */
         int cursor;       // index of next element to return
         int lastRet = -1; // index of last element returned; -1 if no such
+        /**
+         * 应该被修改的次数
+         */
         int expectedModCount = modCount;
 
+        /**
+         * 如果当前的位置跟元素的大小不相等，则表示还有元素没有遍历完
+         */
         public boolean hasNext() {
             return cursor != size;
         }
@@ -903,6 +918,7 @@ public class ArrayList<E> extends AbstractList<E>
                 throw new NoSuchElementException();
             }
             Object[] elementData = ArrayList.this.elementData;
+
             if (i >= elementData.length) {
                 throw new ConcurrentModificationException();
             }
