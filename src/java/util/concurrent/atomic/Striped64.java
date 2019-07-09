@@ -150,6 +150,7 @@ abstract class Striped64 extends Number {
 
     /**
      * Table of cells. When non-null, size is a power of 2.
+     * 不为空时，容量为2的次方
      */
     transient volatile Cell[] cells;
 
@@ -217,8 +218,7 @@ abstract class Striped64 extends Number {
      * avoids the need for an extra field or function in LongAdder).
      * @param wasUncontended false if CAS failed before call
      */
-    final void longAccumulate(long x, LongBinaryOperator fn,
-                              boolean wasUncontended) {
+    final void longAccumulate(long x, LongBinaryOperator fn, boolean wasUncontended) {
         int h;
         if ((h = getProbe()) == 0) {
             ThreadLocalRandom.current(); // force initialization
@@ -274,12 +274,13 @@ abstract class Striped64 extends Number {
                     continue;                   // Retry with expanded table
                 }
                 h = advanceProbe(h);
-            }
-            else if (cellsBusy == 0 && cells == as && casCellsBusy()) {
+            } else if (cellsBusy == 0 && cells == as && casCellsBusy()) { // 第一次调用时
                 boolean init = false;
-                try {                           // Initialize table
+                try { // Initialize table
                     if (cells == as) {
+                        // 初始化大小为2
                         Cell[] rs = new Cell[2];
+                        // h & 1的值只可能为0或1
                         rs[h & 1] = new Cell(x);
                         cells = rs;
                         init = true;
@@ -287,12 +288,13 @@ abstract class Striped64 extends Number {
                 } finally {
                     cellsBusy = 0;
                 }
-                if (init)
+                if (init) {
                     break;
-            }
-            else if (casBase(v = base, ((fn == null) ? v + x :
-                                        fn.applyAsLong(v, x))))
+                }
+            } else if (casBase(v = base, ((fn == null) ? v + x :
+                                        fn.applyAsLong(v, x)))) {
                 break;                          // Fall back on using base
+            }
         }
     }
 
@@ -402,13 +404,14 @@ abstract class Striped64 extends Number {
         try {
             UNSAFE = sun.misc.Unsafe.getUnsafe();
             Class<?> sk = Striped64.class;
-            BASE = UNSAFE.objectFieldOffset
-                (sk.getDeclaredField("base"));
-            CELLSBUSY = UNSAFE.objectFieldOffset
-                (sk.getDeclaredField("cellsBusy"));
+
+            BASE = UNSAFE.objectFieldOffset(sk.getDeclaredField("base"));
+
+            CELLSBUSY = UNSAFE.objectFieldOffset(sk.getDeclaredField("cellsBusy"));
+
             Class<?> tk = Thread.class;
-            PROBE = UNSAFE.objectFieldOffset
-                (tk.getDeclaredField("threadLocalRandomProbe"));
+            PROBE = UNSAFE.objectFieldOffset(tk.getDeclaredField("threadLocalRandomProbe"));
+
         } catch (Exception e) {
             throw new Error(e);
         }

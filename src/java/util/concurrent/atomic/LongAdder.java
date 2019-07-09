@@ -87,8 +87,8 @@ public class LongAdder extends Striped64 implements Serializable {
         int m; 
         Cell a;
         
-        if ((as = cells) != null 
-        		|| !casBase(b = base, b + x)) { // 设置 base 的值
+        if ((as = cells) != null // 第一次调用时为null
+                || !casBase(b = base, b + x)) { // 设置 base 的值
         	
             boolean uncontended = true;
             
