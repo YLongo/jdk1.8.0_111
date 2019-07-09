@@ -171,6 +171,7 @@ class Random implements java.io.Serializable {
     }
 
     /**
+     * 根据老的种子去生成新的种子 <br>
      * Generates the next pseudorandom number. Subclasses should
      * override this, as this is used by all other methods.
      *
@@ -389,18 +390,16 @@ class Random implements java.io.Serializable {
      * @since 1.2
      */
     public int nextInt(int bound) {
-        if (bound <= 0)
+        if (bound <= 0) {
             throw new IllegalArgumentException(BadBound);
+        }
 
         int r = next(31);
         int m = bound - 1;
-        if ((bound & m) == 0)  // i.e., bound is a power of 2
+        if ((bound & m) == 0)  { // i.e., bound is a power of 2
             r = (int)((bound * (long)r) >> 31);
-        else {
-            for (int u = r;
-                 u - (r = u % bound) + m < 0;
-                 u = next(31))
-                ;
+        } else {
+            for (int u = r; u - (r = u % bound) + m < 0; u = next(31));
         }
         return r;
     }

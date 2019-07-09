@@ -55,7 +55,11 @@ public class AtomicLong extends Number implements java.io.Serializable {
     private static final long serialVersionUID = 1927816293512124184L;
 
     // setup to use Unsafe.compareAndSwapLong for updates
+    // 获取Unsage实例，因为AtomicLong在rt.jar包下，是通过BootStarp类加载器进行加载的。所以可以这样获取
+    // 如果我们自己想要使用，需要通过反射来获取
     private static final Unsafe unsafe = Unsafe.getUnsafe();
+
+    // 变量value的偏移量
     private static final long valueOffset;
 
     /**
@@ -74,8 +78,8 @@ public class AtomicLong extends Number implements java.io.Serializable {
 
     static {
         try {
-            valueOffset = unsafe.objectFieldOffset
-                (AtomicLong.class.getDeclaredField("value"));
+            // 获取变量value的偏移量
+            valueOffset = unsafe.objectFieldOffset(AtomicLong.class.getDeclaredField("value"));
         } catch (Exception ex) { throw new Error(ex); }
     }
 

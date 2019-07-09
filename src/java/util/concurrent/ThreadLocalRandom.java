@@ -125,12 +125,14 @@ public class ThreadLocalRandom extends Random {
      * but we provide identical statistical properties.
      */
 
-    /** Generates per-thread initialization/probe field */
-    private static final AtomicInteger probeGenerator =
-        new AtomicInteger();
+    /** Generates per-thread initialization/probe field
+     *  计算每个线程中的初始值
+     * */
+    private static final AtomicInteger probeGenerator = new AtomicInteger();
 
     /**
      * The next seed for default constructors.
+     * 生成种子
      */
     private static final AtomicLong seeder = new AtomicLong(initialSeed());
 
@@ -218,6 +220,7 @@ public class ThreadLocalRandom extends Random {
         int probe = (p == 0) ? 1 : p; // skip 0
         long seed = mix64(seeder.getAndAdd(SEEDER_INCREMENT));
         Thread t = Thread.currentThread();
+        // 将生成的探针与种子设置到当前线程汇中去
         UNSAFE.putLong(t, SEED, seed);
         UNSAFE.putInt(t, PROBE, probe);
     }
@@ -234,6 +237,7 @@ public class ThreadLocalRandom extends Random {
         	localInit();
         }
         // 静态的，所以多个线程返回的是同一个实例
+        // 具体的种子都是放在线程当中，实例包含了与线程无关的通用算法，所以是线程安全的
         return instance;
     }
 
@@ -251,8 +255,9 @@ public class ThreadLocalRandom extends Random {
 
     final long nextSeed() {
         Thread t; long r; // read and update per-thread seed
-        UNSAFE.putLong(t = Thread.currentThread(), SEED,
-                       r = UNSAFE.getLong(t, SEED) + GAMMA);
+        // 根据当前线程中的种子计算新的种子，并设置到当前线程中去
+        UNSAFE.putLong(t = Thread.currentThread(), SEED, r = UNSAFE.getLong(t, SEED) + GAMMA);
+
         return r;
     }
 
@@ -361,13 +366,16 @@ public class ThreadLocalRandom extends Random {
      * @throws IllegalArgumentException if {@code bound} is not positive
      */
     public int nextInt(int bound) {
-        if (bound <= 0)
+        if (bound <= 0) {
             throw new IllegalArgumentException(BadBound);
+        }
+
+        // 生成新种子
         int r = mix32(nextSeed());
         int m = bound - 1;
-        if ((bound & m) == 0) // power of two
+        if ((bound & m) == 0) { // power of two
             r &= m;
-        else { // reject over-represented candidates
+        } else { // reject over-represented candidates
             for (int u = r >>> 1;
                  u + m - (r = u % bound) < 0;
                  u = mix32(nextSeed()) >>> 1)
@@ -1070,12 +1078,14 @@ public class ThreadLocalRandom extends Random {
     private static final long SECONDARY;
     static {
         try {
+            // 获取一个Unsafe实例
             UNSAFE = sun.misc.Unsafe.getUnsafe();
             Class<?> tk = Thread.class;
             // 获取 Thread 类里面 threadLocalRandomSeed 变量在 Thread 实例里面的偏移量
             SEED = UNSAFE.objectFieldOffset(tk.getDeclaredField("threadLocalRandomSeed"));
-            
+            // 获取Thread类里面的threadLocalRandomProbe变量在Thread实例中的偏移量
             PROBE = UNSAFE.objectFieldOffset(tk.getDeclaredField("threadLocalRandomProbe"));
+            // 获取threadLocalRandomSecondarySeed在Thread实例中的偏移量
             SECONDARY = UNSAFE.objectFieldOffset(tk.getDeclaredField("threadLocalRandomSecondarySeed"));
         } catch (Exception e) {
             throw new Error(e);
