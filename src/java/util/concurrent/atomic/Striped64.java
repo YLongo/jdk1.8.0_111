@@ -137,8 +137,7 @@ abstract class Striped64 extends Number {
             try {
                 UNSAFE = sun.misc.Unsafe.getUnsafe();
                 Class<?> ak = Cell.class;
-                valueOffset = UNSAFE.objectFieldOffset
-                    (ak.getDeclaredField("value"));
+                valueOffset = UNSAFE.objectFieldOffset(ak.getDeclaredField("value"));
             } catch (Exception e) {
                 throw new Error(e);
             }
@@ -162,6 +161,7 @@ abstract class Striped64 extends Number {
 
     /**
      * Spinlock (locked via CAS) used when resizing and/or creating Cells.
+     * 自旋锁（通过CAS来锁定）用于扩容或者新建Cell数组
      */
     transient volatile int cellsBusy;
 
@@ -220,6 +220,7 @@ abstract class Striped64 extends Number {
      */
     final void longAccumulate(long x, LongBinaryOperator fn, boolean wasUncontended) {
         int h;
+        // 初始化当前线程threadLocalRandomProbe的值
         if ((h = getProbe()) == 0) {
             ThreadLocalRandom.current(); // force initialization
             h = getProbe();
@@ -229,42 +230,56 @@ abstract class Striped64 extends Number {
         for (;;) {
             Cell[] as; Cell a; int n; long v;
             if ((as = cells) != null && (n = as.length) > 0) {
+                // 如果发现当前的槽位已经有元素，则会去重新计算h的值
                 if ((a = as[(n - 1) & h]) == null) {
                     if (cellsBusy == 0) {       // Try to attach new Cell
                         Cell r = new Cell(x);   // Optimistically create
+                        // 将状态位的值设置为1，表示正在新建Cell元素
                         if (cellsBusy == 0 && casCellsBusy()) {
                             boolean created = false;
-                            try {               // Recheck under lock
+                            try { // Recheck under lock
                                 Cell[] rs; int m, j;
+                                // 如果当前位置的元素为null，则将新值添加到该位置
                                 if ((rs = cells) != null &&
                                     (m = rs.length) > 0 &&
                                     rs[j = (m - 1) & h] == null) {
+
                                     rs[j] = r;
                                     created = true;
                                 }
                             } finally {
                                 cellsBusy = 0;
                             }
-                            if (created)
+
+                            if (created) {
                                 break;
+                            }
+
                             continue;           // Slot is now non-empty
                         }
                     }
                     collide = false;
                 } else if (!wasUncontended) { // CAS already known to fail
                 	wasUncontended = true;    // Continue after rehash
-                } else if (a.cas(v = a.value, ((fn == null) ? v + x : fn.applyAsLong(v, x)))) { // 如果 fn == null 表示的是使用 LongAdder
+                // 如果 fn == null 表示的是使用 LongAdder
+                // 当前槽位有值，则通过CAS进行相加操作
+                } else if (a.cas(v = a.value, ((fn == null) ? v + x : fn.applyAsLong(v, x)))) {
                 	break;
-                } else if (n >= NCPU || cells != as)
+                // 只有当每个CPU都运行一个线程时才会使多线程的效果最佳，
+                // 也就是当cells数组元素个数与CPU个数一致时，每个Cell都使用一个CPU进行处理，这时性能才是最佳的。
+                } else if (n >= NCPU || cells != as) {
                     collide = false;            // At max size or stale
-                else if (!collide)
+                } else if (!collide) {
                     collide = true;
-                else if (cellsBusy == 0 && casCellsBusy()) {
+                // 如果当前元素的数量少于CPU的个数，并且上面的CAS操作失败，即有多个线程同时操作同一个元素时
+                } else if (cellsBusy == 0 && casCellsBusy()) {
                     try {
                         if (cells == as) {      // Expand table unless stale
+                            // 将数组扩容为以前的2倍
                             Cell[] rs = new Cell[n << 1];
-                            for (int i = 0; i < n; ++i)
+                            for (int i = 0; i < n; ++i) {
                                 rs[i] = as[i];
+                            }
                             cells = rs;
                         }
                     } finally {
@@ -273,8 +288,11 @@ abstract class Striped64 extends Number {
                     collide = false;
                     continue;                   // Retry with expanded table
                 }
+                // 重新计算随机数的值来获取Cell数组中的位置
                 h = advanceProbe(h);
-            } else if (cellsBusy == 0 && cells == as && casCellsBusy()) { // 第一次调用时
+                // 第一次调用时，初始化Cell数组
+                // 并将cellsBusy的值设置为1，表示正在进行新建，那么其它线程只能等待
+            } else if (cellsBusy == 0 && cells == as && casCellsBusy()) {
                 boolean init = false;
                 try { // Initialize table
                     if (cells == as) {
@@ -286,11 +304,14 @@ abstract class Striped64 extends Number {
                         init = true;
                     }
                 } finally {
+                    // 重置状态位
                     cellsBusy = 0;
                 }
                 if (init) {
                     break;
                 }
+            // 如果有两个线程同时进行初始化，必有一个线程初始化失败，那么直接将竞争失败线程需要相加的值更新到base上去
+            // 反正最后在获取值（sum()）的时候，会把base上的值累加上去
             } else if (casBase(v = base, ((fn == null) ? v + x :
                                         fn.applyAsLong(v, x)))) {
                 break;                          // Fall back on using base
@@ -338,27 +359,24 @@ abstract class Striped64 extends Number {
                         }
                     }
                     collide = false;
-                }
-                else if (!wasUncontended)       // CAS already known to fail
+                } else if (!wasUncontended) { // CAS already known to fail
                     wasUncontended = true;      // Continue after rehash
-                else if (a.cas(v = a.value,
+                } else if (a.cas(v = a.value,
                                ((fn == null) ?
-                                Double.doubleToRawLongBits
-                                (Double.longBitsToDouble(v) + x) :
-                                Double.doubleToRawLongBits
-                                (fn.applyAsDouble
-                                 (Double.longBitsToDouble(v), x)))))
+                                Double.doubleToRawLongBits(Double.longBitsToDouble(v) + x) :
+                                Double.doubleToRawLongBits(fn.applyAsDouble(Double.longBitsToDouble(v), x))))) {
                     break;
-                else if (n >= NCPU || cells != as)
+                } else if (n >= NCPU || cells != as) {
                     collide = false;            // At max size or stale
-                else if (!collide)
+                } else if (!collide) {
                     collide = true;
-                else if (cellsBusy == 0 && casCellsBusy()) {
+                } else if (cellsBusy == 0 && casCellsBusy()) {
                     try {
                         if (cells == as) {      // Expand table unless stale
                             Cell[] rs = new Cell[n << 1];
-                            for (int i = 0; i < n; ++i)
+                            for (int i = 0; i < n; ++i) {
                                 rs[i] = as[i];
+                            }
                             cells = rs;
                         }
                     } finally {
@@ -368,8 +386,7 @@ abstract class Striped64 extends Number {
                     continue;                   // Retry with expanded table
                 }
                 h = advanceProbe(h);
-            }
-            else if (cellsBusy == 0 && cells == as && casCellsBusy()) {
+            } else if (cellsBusy == 0 && cells == as && casCellsBusy()) {
                 boolean init = false;
                 try {                           // Initialize table
                     if (cells == as) {
@@ -383,15 +400,12 @@ abstract class Striped64 extends Number {
                 }
                 if (init)
                     break;
-            }
-            else if (casBase(v = base,
-                             ((fn == null) ?
-                              Double.doubleToRawLongBits
-                              (Double.longBitsToDouble(v) + x) :
-                              Double.doubleToRawLongBits
-                              (fn.applyAsDouble
-                               (Double.longBitsToDouble(v), x)))))
+            } else if (casBase(v = base,
+                             ((fn == null)
+                                     ? Double.doubleToRawLongBits(Double.longBitsToDouble(v) + x)
+                                     : Double.doubleToRawLongBits(fn.applyAsDouble(Double.longBitsToDouble(v), x))))) {
                 break;                          // Fall back on using base
+            }
         }
     }
 

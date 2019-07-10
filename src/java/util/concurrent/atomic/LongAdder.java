@@ -88,13 +88,18 @@ public class LongAdder extends Striped64 implements Serializable {
         Cell a;
         
         if ((as = cells) != null // 第一次调用时为null
-                || !casBase(b = base, b + x)) { // 设置 base 的值
-        	
+                || !casBase(b = base, b + x)) { // 在base的基础上进行累加操作
+
+            // 如果cells不为null，或者CAS操作失败了，则会执行下面的代码
             boolean uncontended = true;
             
-            if (as == null 
-            		|| (m = as.length - 1) < 0 
-            		|| (a = as[getProbe() & m]) == null 
+            if (as == null
+                    // 判断数组里面是否有元素，并给m赋值
+            		|| (m = as.length - 1) < 0
+                    // 判断当前位置的元素是否为null。任何数与m进行与操作后的值都会<=m
+                    // getProbe可以获取当前线程中值的位置
+            		|| (a = as[getProbe() & m]) == null
+                    // 使用CAS更新当前位置中的值
             		|| !(uncontended = a.cas(v = a.value, v + x))) {
 
             	longAccumulate(x, null, uncontended);
@@ -126,7 +131,7 @@ public class LongAdder extends Striped64 implements Serializable {
      * 返回当前的值。
      * 返回值并不是一个原子快照。
      * 在非并发的情况下，返回的是一个精确的值。
-     * 但是在并发更新的情况下，则不是。
+     * 但是在并发更新的情况下，则不是。因为在调用该方法时，其它线程可能会Cell中的值进行了更改
      *
      * @return the sum
      */
