@@ -124,6 +124,7 @@ public class CopyOnWriteArrayList<E> implements List<E>, RandomAccess, Cloneable
 
     /**
      * Creates an empty list.
+     * 创建一个长度为0空的数组
      */
     public CopyOnWriteArrayList() {
         setArray(new Object[0]);
@@ -144,6 +145,13 @@ public class CopyOnWriteArrayList<E> implements List<E>, RandomAccess, Cloneable
         } else {
             elements = c.toArray();
             // c.toArray might (incorrectly) not return Object[] (see 6260652)
+
+            /*
+             * 调用的是Arrays.ArrayList.toArray()
+             * Object[] array = Arrays.asList("A").toArray();
+             * 因为array的实际类型为String[].class
+             * System.out.println(array.getClass() == Object[].class); // false
+             */
             if (elements.getClass() != Object[].class) {
                 elements = Arrays.copyOf(elements, elements.length, Object[].class);
             }
@@ -419,6 +427,7 @@ public class CopyOnWriteArrayList<E> implements List<E>, RandomAccess, Cloneable
             Object[] elements = getArray();
             E oldValue = get(elements, index);
 
+            // 如果值不一样则复制一个新数组进行更新操作
             if (oldValue != element) {
                 int len = elements.length;
                 Object[] newElements = Arrays.copyOf(elements, len);
@@ -426,7 +435,7 @@ public class CopyOnWriteArrayList<E> implements List<E>, RandomAccess, Cloneable
                 setArray(newElements);
             } else {
                 // Not quite a no-op; ensures volatile write semantics
-                // 为了保证 volatile 语义？不是很能理解
+                // 为了保证volatile，即将值刷新到主内存中，
                 setArray(elements);
             }
             return oldValue;
@@ -444,7 +453,7 @@ public class CopyOnWriteArrayList<E> implements List<E>, RandomAccess, Cloneable
      * @return {@code true} (as specified by {@link Collection#add})
      */
     public boolean add(E e) {
-        // 加独占锁
+        // 加独占锁，其他线程会被阻塞
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -516,7 +525,7 @@ public class CopyOnWriteArrayList<E> implements List<E>, RandomAccess, Cloneable
             
             int numMoved = len - index - 1;
             
-            // 表示删除的是最后一个元素。为什么仅仅只把这个当做特例来处理
+            // 表示删除的是最后一个元素
             if (numMoved == 0) {
                 setArray(Arrays.copyOf(elements, len - 1));
             } else { // 删除其它位置的元素
