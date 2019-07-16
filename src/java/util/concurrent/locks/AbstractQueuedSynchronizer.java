@@ -589,7 +589,8 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
     /**
      * The synchronization state. <p>
      * 
-     * 同步状态
+     * 同步状态。
+     * 在{@link ReentrantLock}中表示锁的可重入次数
      */
     private volatile int state;
 
@@ -642,7 +643,9 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
     /**
      * Inserts node into queue, initializing if necessary. See picture above. <p>
      * 
-     * 将节点插入到队列中
+     * 将节点插入到队列中。
+     * 第一次插入的时候会进行初始化操作：在队列中插入一个节点，这个节点相当于一个哨兵节点。
+     * 然后将新节点插入到哨兵节点的后面，也就是说第一次插入操作后，队列中有两个节点。
      * 
      * @param node the node to insert 需要插入的节点
      * @return node's predecessor 当前节点的前驱节点 
@@ -1327,7 +1330,7 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
     public final void acquire(int arg) {
     	// 只有第一个条件返回 false 才会去判断第二个条件是否满足
         if (!tryAcquire(arg)
-        		// 如果获取锁失败，则将当前线程放入等待队列中，知道获取成功返回
+        		// 如果获取锁失败，则将当前线程放入AQS的阻塞队列中，直到获取成功返回
         		&& acquireQueued(addWaiter(Node.EXCLUSIVE), arg)) {
             // 自我中断
         	selfInterrupt();

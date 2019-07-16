@@ -143,13 +143,17 @@ public class ReentrantLock implements Lock, java.io.Serializable {
             } else if (current == getExclusiveOwnerThread()) { // 如果当前线程为线程拥有者
             	// 将当前的状态值加上 acquires
                 int nextc = c + acquires;
+                // 表示可重入次数已经溢出了
                 if (nextc < 0) { // overflow
                 	throw new Error("Maximum lock count exceeded");
                 }
+
                 // 更新状态值
                 setState(nextc);
+
                 return true;
             }
+
             // 如果锁已经被其它线程持有，并且持有者不是当前线程
             return false;
         }
@@ -206,6 +210,8 @@ public class ReentrantLock implements Lock, java.io.Serializable {
     }
 
     /**
+     * 之所以是非公平锁，是因为获取锁的时候是取抢占式的获取方式，而没有看是否还有线程在等待获取锁
+     *
      * Sync object for non-fair locks
      */
     static final class NonfairSync extends Sync {
@@ -288,6 +294,10 @@ public class ReentrantLock implements Lock, java.io.Serializable {
     }
 
     /**
+     * 如果没有其他线程获取锁，则获取成功，重入次数+1
+     * 如果当前线程已经获取到了锁，则重如次数再+1
+     * 如果已经有其他线程获取了锁，则当前线程被阻塞 <br>
+     *
      * Acquires the lock.
      *
      * <p>Acquires the lock if it is not held by another thread and returns
