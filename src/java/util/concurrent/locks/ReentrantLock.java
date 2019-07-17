@@ -131,6 +131,7 @@ public class ReentrantLock implements Lock, java.io.Serializable {
          * 尝试获取锁，或者重入锁，并返回 true；否则返回 false
          */
         final boolean nonfairTryAcquire(int acquires) {
+
             final Thread current = Thread.currentThread();
             int c = getState();
             if (c == 0) { // 如果当前状态为 0，那么则表示没有加锁

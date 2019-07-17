@@ -682,7 +682,9 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      * 根据当前线程的节点模式，创建节点并加入到等待队列中
      *
      * @param mode Node.EXCLUSIVE for exclusive, Node.SHARED for shared <p>
-     *             Node.EXCLUSIVE 表示独占模式，Node.SHARED 表示共享模式
+     *             Node.EXCLUSIVE 表示独占模式，
+     *             Node.SHARED 表示共享模式
+     *
      * @return the new node
      */
     private Node addWaiter(Node mode) {
@@ -701,7 +703,10 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
                 return node;
             }
         }
+
+        // tail == null表示队列为空，第一次添加时的需要进行初始化操作
         enq(node);
+
         return node;
     }
 
@@ -894,18 +899,20 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      * @return {@code true} if thread should block 当前线程是否可以被阻塞
      */
     private static boolean shouldParkAfterFailedAcquire(Node pred, Node node) {
+
+        // 前驱节点的等待状态
         int ws = pred.waitStatus;
+
         if (ws == Node.SIGNAL) { // 值为 -1
             /*
              * This node has already set status asking a release
              * to signal it, so it can safely park.
              * 
-             * 如果前驱节点的状态为 SIGNAL，那么则表示当前节点可以被阻塞。
-             * 因为如果节点的状态接 SIGNAL，则表示它的后继节点需要被唤醒
+             * 前驱节点的状态为 SIGNAL，则表示它的后继节点需要被唤醒
              */
             return true;
         }
-        if (ws > 0) {
+        if (ws > 0) { // 节点是否被取消了 CANCELLED = 1;
             /*
              * Predecessor was cancelled. Skip over predecessors and
              * indicate retry.
@@ -1004,24 +1011,33 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
 
     /**
      * Acquires in exclusive interruptible mode.
+     *
      * @param arg the acquire argument
      */
-    private void doAcquireInterruptibly(int arg)
-        throws InterruptedException {
+    private void doAcquireInterruptibly(int arg) throws InterruptedException {
+
         final Node node = addWaiter(Node.EXCLUSIVE);
+
         boolean failed = true;
+
         try {
             for (;;) {
+
+                // 获取当前节点的前驱节点
                 final Node p = node.predecessor();
+
+                // p == head 表示当前节点的前驱节点为头节点，即队列中的元素就只有当前节点（因为头节点是哨兵节点）
+                // 那么如果当前节点成功获取到锁之后就可以清空队列了
                 if (p == head && tryAcquire(arg)) {
                     setHead(node);
                     p.next = null; // help GC
                     failed = false;
                     return;
                 }
-                if (shouldParkAfterFailedAcquire(p, node) &&
-                    parkAndCheckInterrupt())
+
+                if (shouldParkAfterFailedAcquire(p, node) && parkAndCheckInterrupt()) {
                     throw new InterruptedException();
+                }
             }
         } finally {
             if (failed)
@@ -1352,9 +1368,11 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      * @throws InterruptedException if the current thread is interrupted
      */
     public final void acquireInterruptibly(int arg) throws InterruptedException {
+        // 如果被中断了，则直接抛出异常
         if (Thread.interrupted()) {
         	throw new InterruptedException();
         }
+        // 如果尝试获取锁失败
         if (!tryAcquire(arg)) {
         	doAcquireInterruptibly(arg);
         }
@@ -1664,7 +1682,13 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
         Node h = head;
         Node s;
         /*
-         * TODO 为什么这样判断？
+         * h == t 表示当前阻塞队列为空
+         *
+         * h != t && s == null 表示当前队列中的元素为哨兵节点，即下一个元素即将入队。
+         *                     因为在#enq(Node node)方法中，第一个元素入队时会先创建一个哨兵节点
+         *
+         * h != t && s != null && s.thread != Thread.currentThread()
+         *                     表示当前队列中的第一个元素（其实是第二个元素，第一个为哨兵节点）不是当前线程
          */
         return h != t && ((s = h.next) == null || s.thread != Thread.currentThread());
     }
