@@ -679,7 +679,7 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
     /**
      * Creates and enqueues node for current thread and given mode. <p>
      * 
-     * 根据当前线程的节点模式，创建节点并加入到等待队列中
+     * 根据当前线程的节点模式，创建节点并加入到AQS阻塞队列中
      *
      * @param mode Node.EXCLUSIVE for exclusive, Node.SHARED for shared <p>
      *             Node.EXCLUSIVE 表示独占模式，
@@ -1344,9 +1344,9 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      *        can represent anything you like.
      */
     public final void acquire(int arg) {
-    	// 只有第一个条件返回 false 才会去判断第二个条件是否满足
+    	// 获取锁失败了
         if (!tryAcquire(arg)
-        		// 如果获取锁失败，则将当前线程放入AQS的阻塞队列中，直到获取成功返回
+        		// 则将当前线程放入AQS的阻塞队列中，直到获取成功返回
         		&& acquireQueued(addWaiter(Node.EXCLUSIVE), arg)) {
             // 自我中断
         	selfInterrupt();
@@ -2052,6 +2052,7 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
                 unlinkCancelledWaiters();
                 t = lastWaiter;
             }
+
             // 添加一个新的条件节点
             Node node = new Node(Thread.currentThread(), Node.CONDITION);
             // 将该节点添加到条件等待队列末尾

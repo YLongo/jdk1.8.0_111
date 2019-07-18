@@ -134,6 +134,7 @@ public class ReentrantLock implements Lock, java.io.Serializable {
 
             final Thread current = Thread.currentThread();
             int c = getState();
+
             if (c == 0) { // 如果当前状态为 0，那么则表示没有加锁
             	// 设置当前状态为指定的 acquires
                 if (compareAndSetState(0, acquires)) {
