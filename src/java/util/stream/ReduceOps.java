@@ -101,11 +101,12 @@ final class ReduceOps {
      * @param operator The reducing function
      * @return A {@code TerminalOp} implementing the reduction
      */
-    public static <T> TerminalOp<T, Optional<T>>
-    makeRef(BinaryOperator<T> operator) {
+    public static <T> TerminalOp<T, Optional<T>> makeRef(BinaryOperator<T> operator) {
+
         Objects.requireNonNull(operator);
-        class ReducingSink
-                implements AccumulatingSink<T, Optional<T>, ReducingSink> {
+
+        class ReducingSink implements AccumulatingSink<T, Optional<T>, ReducingSink> {
+
             private boolean empty;
             private T state;
 
@@ -135,7 +136,9 @@ final class ReduceOps {
                     accept(other.state);
             }
         }
+
         return new ReduceOp<T, Optional<T>, ReducingSink>(StreamShape.REFERENCE) {
+
             @Override
             public ReducingSink makeSink() {
                 return new ReducingSink();
