@@ -24,9 +24,10 @@
  */
 
 package java.lang;
-import java.lang.ref.*;
 
 /**
+ * {@link Thread#init(ThreadGroup, Runnable, String, long)}
+ *
  * This class extends <tt>ThreadLocal</tt> to provide inheritance of values
  * from parent thread to child thread: when a child thread is created, the
  * child receives initial values for all inheritable thread-local variables

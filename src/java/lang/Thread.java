@@ -25,21 +25,22 @@
 
 package java.lang;
 
-import java.lang.ref.Reference;
-import java.lang.ref.ReferenceQueue;
-import java.lang.ref.WeakReference;
-import java.security.AccessController;
-import java.security.AccessControlContext;
-import java.security.PrivilegedAction;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.locks.LockSupport;
 import sun.nio.ch.Interruptible;
 import sun.reflect.CallerSensitive;
 import sun.reflect.Reflection;
 import sun.security.util.SecurityConstants;
+
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
+import java.security.AccessControlContext;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.LockSupport;
 
 
 /**
@@ -177,7 +178,7 @@ class Thread implements Runnable {
         return threadInitNumber++;
     }
 
-    /* 
+    /**
      * ThreadLocal values pertaining to this thread. <br>
      * 与当前线程有关的 ThreadLocal 值 <br>
      *  
@@ -189,9 +190,12 @@ class Thread implements Runnable {
      */
     ThreadLocal.ThreadLocalMap threadLocals = null;
 
-    /*
+    /**
      * InheritableThreadLocal values pertaining to this thread. This map is
      * maintained by the InheritableThreadLocal class.
+     *
+     * {@link #init(ThreadGroup, Runnable, String, long, AccessControlContext)}
+     * 会在new Thread时对inheritableThreadLocals进行处理
      */
     ThreadLocal.ThreadLocalMap inheritableThreadLocals = null;
 
@@ -369,8 +373,7 @@ class Thread implements Runnable {
      * Initializes a Thread with the current AccessControlContext.
      * @see #init(ThreadGroup,Runnable,String,long,AccessControlContext)
      */
-    private void init(ThreadGroup g, Runnable target, String name,
-                      long stackSize) {
+    private void init(ThreadGroup g, Runnable target, String name, long stackSize) {
         init(g, target, name, stackSize, null);
     }
 
@@ -429,14 +432,18 @@ class Thread implements Runnable {
         this.group = g;
         this.daemon = parent.isDaemon();
         this.priority = parent.getPriority();
-        if (security == null || isCCLOverridden(parent.getClass()))
+        if (security == null || isCCLOverridden(parent.getClass())) {
             this.contextClassLoader = parent.getContextClassLoader();
-        else
+        } else {
             this.contextClassLoader = parent.contextClassLoader;
-        this.inheritedAccessControlContext =
-                acc != null ? acc : AccessController.getContext();
+        }
+
+        this.inheritedAccessControlContext = acc != null ? acc : AccessController.getContext();
         this.target = target;
+
         setPriority(priority);
+
+        // InheritableThreadLocal之所以可以在子线程获取父线程中的本地变量，这个是关键
         // 判断父线程的 inheritableThreadLocals 是否为 null
         if (parent.inheritableThreadLocals != null) {
         	// 将父线程中的 inheritableThreadLocals 复制一份设置到子线程中去
