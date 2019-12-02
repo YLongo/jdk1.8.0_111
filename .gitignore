@@ -6,3 +6,4 @@
 .externalToolBuilders/
 /bin/
 .idea/
+out/production/jdk1.8.0_111/*

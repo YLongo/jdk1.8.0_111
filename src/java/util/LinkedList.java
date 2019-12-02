@@ -80,13 +80,12 @@ import java.util.function.Consumer;
  * @param <E> the type of elements held in this collection
  */
 
-public class LinkedList<E>
-    extends AbstractSequentialList<E>
-    implements List<E>, Deque<E>, Cloneable, java.io.Serializable
-{
+public class LinkedList<E> extends AbstractSequentialList<E> implements List<E>, Deque<E>, Cloneable, java.io.Serializable {
+
     transient int size = 0;
 
     /**
+     * 头指针
      * Pointer to first node.
      * Invariant: (first == null && last == null) ||
      *            (first.prev == null && first.item != null)
@@ -94,6 +93,7 @@ public class LinkedList<E>
     transient Node<E> first;
 
     /**
+     * 尾指针
      * Pointer to last node.
      * Invariant: (first == null && last == null) ||
      *            (last.next == null && last.item != null)
@@ -141,10 +141,12 @@ public class LinkedList<E>
         final Node<E> l = last;
         final Node<E> newNode = new Node<>(l, e, null);
         last = newNode;
-        if (l == null)
+        if (l == null) {
             first = newNode;
-        else
+        } else {
             l.next = newNode;
+        }
+
         size++;
         modCount++;
     }
@@ -171,16 +173,29 @@ public class LinkedList<E>
     private E unlinkFirst(Node<E> f) {
         // assert f == first && f != null;
         final E element = f.item;
+
+        // 获取第一个节点的下一个节点
         final Node<E> next = f.next;
+
         f.item = null;
+
+        // 第一个节点的next指针设为null，即没有下一个节点
         f.next = null; // help GC
+
+        // first指向下一个节点
         first = next;
-        if (next == null)
+
+        // next为空表示只有一个节点了
+        if (next == null) {
             last = null;
-        else
+        } else {
+            // next不指向第一个节点。至此，第一个节点不指向任何节点，任何节点也不指向该节点。所以第一个节点被删除了
             next.prev = null;
+        }
+
         size--;
         modCount++;
+
         return element;
     }
 
@@ -240,8 +255,9 @@ public class LinkedList<E>
      */
     public E getFirst() {
         final Node<E> f = first;
-        if (f == null)
+        if (f == null) {
             throw new NoSuchElementException();
+        }
         return f.item;
     }
 
@@ -253,8 +269,9 @@ public class LinkedList<E>
      */
     public E getLast() {
         final Node<E> l = last;
-        if (l == null)
+        if (l == null) {
             throw new NoSuchElementException();
+        }
         return l.item;
     }
 
@@ -266,8 +283,9 @@ public class LinkedList<E>
      */
     public E removeFirst() {
         final Node<E> f = first;
-        if (f == null)
+        if (f == null) {
             throw new NoSuchElementException();
+        }
         return unlinkFirst(f);
     }
 
