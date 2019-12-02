@@ -164,7 +164,9 @@ public class ThreadLocal<T> {
      */
     public T get() {
         Thread t = Thread.currentThread();
+        // 获取当前线程对应的threadLocals实例变量
         ThreadLocalMap map = getMap(t);
+
         if (map != null) {
             ThreadLocalMap.Entry e = map.getEntry(this);
             System.out.println("threadLocal:" + this);
@@ -178,6 +180,7 @@ public class ThreadLocal<T> {
                 return result;
             }
         }
+
         // 为空则初始化当前线程的 threadLocals 成员变量
         return setInitialValue();
     }
@@ -196,10 +199,11 @@ public class ThreadLocal<T> {
         T value = initialValue();
         Thread t = Thread.currentThread();
         ThreadLocalMap map = getMap(t);
-        if (map != null)
+        if (map != null) {
             map.set(this, value);
-        else
+        } else {
             createMap(t, value);
+        }
         return value;
     }
 
@@ -215,15 +219,17 @@ public class ThreadLocal<T> {
     public void set(T value) {
     	// 获取当前线程
         Thread t = Thread.currentThread();
-        /* 以当前线程作为 key，去查找对应的线程变量
+        /*
+         * 获取当前线程对应的本地变量。
          * InheritableThreadLocal 重写了这个方法
          */
         ThreadLocalMap map = getMap(t);
-        if (map != null)
+        if (map != null) {
+            // key为当前ThreadLocal实例变量的引用
             map.set(this, value);
-        else {
+        } else {
         	/*
-        	 *  如果是第一次调用，则创建当前线程对应的 HashMap
+        	 *  如果是第一次调用，则创建当前线程对应的 ThreadLocalMap
         	 *  InheritableThreadLocal 重写了该方法
         	 */
         	createMap(t, value);
@@ -255,6 +261,10 @@ public class ThreadLocal<T> {
      }
 
     /**
+     * 获取当前线程本身的threadLocals实例变量，该变量保存了属于这个线程的值
+     * <br>
+     * InheritableThreadLocal重写了这个方法
+     * <br>
      * Get the map associated with a ThreadLocal. Overridden in
      * InheritableThreadLocal.
      *
