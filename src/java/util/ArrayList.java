@@ -269,6 +269,7 @@ public class ArrayList<E> extends AbstractList<E>
 
         // overflow-conscious code
         int oldCapacity = elementData.length;
+        // 新数组的长度为旧数组的长度 + 旧数组长度的一半
         int newCapacity = oldCapacity + (oldCapacity >> 1);
 
         if (newCapacity - minCapacity < 0) {
@@ -279,6 +280,7 @@ public class ArrayList<E> extends AbstractList<E>
             newCapacity = hugeCapacity(minCapacity);
         }
 
+        // 将旧数组中元素拷贝到新数组中
         // minCapacity is usually close to size, so this is a win:
         elementData = Arrays.copyOf(elementData, newCapacity);
     }

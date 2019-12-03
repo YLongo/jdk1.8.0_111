@@ -580,19 +580,22 @@ public class LinkedList<E> extends AbstractSequentialList<E> implements List<E>,
 
     /**
      * Returns the (non-null) Node at the specified element index.
+     * 通过类似二分法查找，判断index是在链表的前半部分还是后半部分，减少查找的次数
      */
     Node<E> node(int index) {
         // assert isElementIndex(index);
 
         if (index < (size >> 1)) {
             Node<E> x = first;
-            for (int i = 0; i < index; i++)
+            for (int i = 0; i < index; i++) {
                 x = x.next;
+            }
             return x;
         } else {
             Node<E> x = last;
-            for (int i = size - 1; i > index; i--)
+            for (int i = size - 1; i > index; i--) {
                 x = x.prev;
+            }
             return x;
         }
     }
