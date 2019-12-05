@@ -209,6 +209,22 @@ public class LinkedHashMap<K,V>
     transient LinkedHashMap.Entry<K,V> tail;
 
     /**
+     * <pre>
+     * 决定遍历时是按照插入顺序还是查找顺序输出：
+     *   true  =  查找（调用get方法时，会把当前元素放到链表尾部）
+     *   false =  插入
+     *
+     * ---
+     *
+     * map.put(1, "a")
+     * map.put(2, "b")
+     * map.put(3, "c")
+     * map.get(1)
+     *
+     * 为false时，遍历输出为：1, 2, 3
+     * 为true 时，遍历输出为：2, 3, 1
+     *
+     * </pre>
      * The iteration ordering method for this linked hash map: <tt>true</tt>
      * for access-order, <tt>false</tt> for insertion-order.
      *
@@ -395,9 +411,8 @@ public class LinkedHashMap<K,V>
      * @throws IllegalArgumentException if the initial capacity is negative
      *         or the load factor is nonpositive
      */
-    public LinkedHashMap(int initialCapacity,
-                         float loadFactor,
-                         boolean accessOrder) {
+    public LinkedHashMap(int initialCapacity, float loadFactor, boolean accessOrder) {
+
         super(initialCapacity, loadFactor);
         this.accessOrder = accessOrder;
     }
@@ -414,8 +429,9 @@ public class LinkedHashMap<K,V>
     public boolean containsValue(Object value) {
         for (LinkedHashMap.Entry<K,V> e = head; e != null; e = e.after) {
             V v = e.value;
-            if (v == value || (value != null && value.equals(v)))
+            if (v == value || (value != null && value.equals(v))) {
                 return true;
+            }
         }
         return false;
     }
@@ -437,10 +453,15 @@ public class LinkedHashMap<K,V>
      */
     public V get(Object key) {
         Node<K,V> e;
-        if ((e = getNode(hash(key), key)) == null)
+
+        if ((e = getNode(hash(key), key)) == null) {
             return null;
-        if (accessOrder)
+        }
+
+        // 如果
+        if (accessOrder) {
             afterNodeAccess(e);
+        }
         return e.value;
     }
 
