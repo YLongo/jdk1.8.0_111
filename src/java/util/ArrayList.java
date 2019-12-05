@@ -521,6 +521,7 @@ public class ArrayList<E> extends AbstractList<E>
         E oldValue = elementData(index);
 
         int numMoved = size - index - 1;
+        // 如果是最后一个元素，则不需要做复制操作，直接删除就好
         if (numMoved > 0) {
             System.arraycopy(elementData, index + 1, elementData, index, numMoved);
         }
@@ -912,6 +913,7 @@ public class ArrayList<E> extends AbstractList<E>
 
         @SuppressWarnings("unchecked")
         public E next() {
+            // 当多个线程修改时，会产生fail-fast的原因就在这里
             checkForComodification();
             int i = cursor;
             if (i >= size) {
@@ -937,6 +939,7 @@ public class ArrayList<E> extends AbstractList<E>
                 ArrayList.this.remove(lastRet);
                 cursor = lastRet;
                 lastRet = -1;
+                // 之所以删除列表中的元素必须调用迭代器中的remove()才不会反生fail-fast异常的原因就在这里
                 expectedModCount = modCount;
             } catch (IndexOutOfBoundsException ex) {
                 throw new ConcurrentModificationException();
