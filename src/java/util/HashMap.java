@@ -687,9 +687,9 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         }
 
         /*
-         * 如果当前索引处的值为空，则插入。 (n -1) & hash 的值在 0 ~ n-1 之间
+         * 如果当前索引处的值为空，则插入。 (n - 1) & hash 的值在 0 ~ n-1 之间
          * 
-         * (n -1) & hash 相当与 hash % n，但是取模运算的代价比较大，这种方式在速度上更快
+         * (n - 1) & hash 相当与 hash % n，但是取模运算的代价比较大，这种方式在速度上更快
          * 
          * 但是仅仅限于 n 是 2 的次方。恰恰 HashMap 规定数组的容量必须是 2 的多少次方
          * 
@@ -788,9 +788,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         	} else if ((newCap = oldCap << 1) < MAXIMUM_CAPACITY && oldCap >= DEFAULT_INITIAL_CAPACITY) {
         		/*
         		 * 如果当前数组的容量的平方小于最大容量 且 当前数组的容量大于默认的容量
-        		 *
         		 * 则新数组容量为当前数组容量的平方
-        		 * 
         		 * 新数组容量的阀值为当前数组容量的阀值的平方
         		 * 
         		 * 16 * 0.75 = 12
@@ -855,7 +853,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                          * 例如：在旧链表中元素的顺序为：123456
                          *      那么在新数组中可能会变成两条新链表
                          *      这两条新链表中元素的顺序可能为：123
-                         *                                456
+                         *                                 456
                          *                                
                          *      虽然变成了两条新链表，但是新链表中元素的顺序跟之前还是一致的
                          * 

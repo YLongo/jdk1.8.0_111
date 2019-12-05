@@ -130,7 +130,7 @@ public class ArrayList<E> extends AbstractList<E>
      * The capacity of the ArrayList is the length of this array buffer. Any
      * empty ArrayList with elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA
      * will be expanded to DEFAULT_CAPACITY when the first element is added. <br>
-     * 容量变化为: 10
+     * 容量变化为：10
      *           10 + 10/2 = 15
      *           15 -> 15 + 15/2 = 22
      *           22 -> 22 + 22/2 = 33
@@ -269,6 +269,7 @@ public class ArrayList<E> extends AbstractList<E>
 
         // overflow-conscious code
         int oldCapacity = elementData.length;
+        // 新数组的长度为旧数组的长度 + 旧数组长度的一半
         int newCapacity = oldCapacity + (oldCapacity >> 1);
 
         if (newCapacity - minCapacity < 0) {
@@ -279,6 +280,7 @@ public class ArrayList<E> extends AbstractList<E>
             newCapacity = hugeCapacity(minCapacity);
         }
 
+        // 将旧数组中元素拷贝到新数组中
         // minCapacity is usually close to size, so this is a win:
         elementData = Arrays.copyOf(elementData, newCapacity);
     }
@@ -486,6 +488,8 @@ public class ArrayList<E> extends AbstractList<E>
     /**
      *
      * 在指定位置添加元素 <br>
+     * 将index位置后面的元素整体往后挪动一位，再用element覆盖index处的元素
+     * <br>
      * Inserts the specified element at the specified position in this
      * list. Shifts the element currently at that position (if any) and
      * any subsequent elements to the right (adds one to their indices).
@@ -499,6 +503,11 @@ public class ArrayList<E> extends AbstractList<E>
         rangeCheckForAdd(index);
 
         ensureCapacityInternal(size + 1);  // Increments modCount!!
+        /*
+         * 从哪里来：以index为起点，开始拷贝elementData数组中的数组
+         * 到哪里去：以index + 1为起点，将数据拷贝到elementData数组中
+         * 走多远：拷贝size - index个元素
+         */
         System.arraycopy(elementData, index, elementData, index + 1, size - index);
         elementData[index] = element;
         size++;

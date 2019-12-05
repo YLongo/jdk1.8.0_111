@@ -169,6 +169,7 @@ public class ThreadLocal<T> {
 
         if (map != null) {
             ThreadLocalMap.Entry e = map.getEntry(this);
+            System.out.println("threadLocal:" + this);
             /*
              * 什么情况下这个 Entry 会为 null 呢? 
              * 当调用了 remove 方法
