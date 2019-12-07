@@ -238,9 +238,9 @@ public class LinkedHashMap<K,V>
     private void linkNodeLast(LinkedHashMap.Entry<K,V> p) {
         LinkedHashMap.Entry<K,V> last = tail;
         tail = p;
-        if (last == null)
+        if (last == null) {
             head = p;
-        else {
+        } else {
             p.before = last;
             last.after = p;
         }
@@ -269,8 +269,7 @@ public class LinkedHashMap<K,V>
     }
 
     Node<K,V> newNode(int hash, K key, V value, Node<K,V> e) {
-        LinkedHashMap.Entry<K,V> p =
-            new LinkedHashMap.Entry<K,V>(hash, key, value, e);
+        LinkedHashMap.Entry<K,V> p = new LinkedHashMap.Entry<K,V>(hash, key, value, e);
         linkNodeLast(p);
         return p;
     }
@@ -310,6 +309,13 @@ public class LinkedHashMap<K,V>
             a.before = b;
     }
 
+    /**
+     * 用于移除最先插入的元素（也就是最老的元素）。需要自己实现 {@link #removeEldestEntry}方法。
+     * <br>
+     * 默认情况下不会做这样的处理
+     *
+     * @param evict
+     */
     void afterNodeInsertion(boolean evict) { // possibly remove eldest
         LinkedHashMap.Entry<K,V> first;
         if (evict && (first = head) != null && removeEldestEntry(first)) {
@@ -318,26 +324,48 @@ public class LinkedHashMap<K,V>
         }
     }
 
+    /**
+     * 将元素挪到链表的最后
+     *
+     * @param e 要被挪到最后的元素
+     */
     void afterNodeAccess(Node<K,V> e) { // move node to last
+
         LinkedHashMap.Entry<K,V> last;
+
         if (accessOrder && (last = tail) != e) {
-            LinkedHashMap.Entry<K,V> p =
-                (LinkedHashMap.Entry<K,V>)e, b = p.before, a = p.after;
+            /*
+             * 记录当前元素及其前、后指针
+             *
+             *        [e]
+             * [b] <- [p] -> [a]
+             *
+             */
+            LinkedHashMap.Entry<K,V> p = (LinkedHashMap.Entry<K,V>) e,
+                                     b = p.before,
+                                     a = p.after;
             p.after = null;
-            if (b == null)
+
+            // 说明元素e为第一个元素
+            if (b == null) {
                 head = a;
-            else
+            } else {
                 b.after = a;
-            if (a != null)
+            }
+
+            if (a != null) {
                 a.before = b;
-            else
+            } else { // 说明元素e是最后一个元素
                 last = b;
-            if (last == null)
+            }
+
+            if (last == null) {
                 head = p;
-            else {
+            } else {
                 p.before = last;
                 last.after = p;
             }
+
             tail = p;
             ++modCount;
         }
@@ -458,7 +486,7 @@ public class LinkedHashMap<K,V>
             return null;
         }
 
-        // 如果
+        // 将该节点移动到链表最后
         if (accessOrder) {
             afterNodeAccess(e);
         }
@@ -470,10 +498,13 @@ public class LinkedHashMap<K,V>
      */
     public V getOrDefault(Object key, V defaultValue) {
        Node<K,V> e;
-       if ((e = getNode(hash(key), key)) == null)
+       if ((e = getNode(hash(key), key)) == null) {
            return defaultValue;
-       if (accessOrder)
+       }
+
+       if (accessOrder) {
            afterNodeAccess(e);
+       }
        return e.value;
    }
 
@@ -558,28 +589,44 @@ public class LinkedHashMap<K,V>
     }
 
     final class LinkedKeySet extends AbstractSet<K> {
-        public final int size()                 { return size; }
-        public final void clear()               { LinkedHashMap.this.clear(); }
+
+        public final int size() {
+            return size;
+        }
+
+        public final void clear() {
+            LinkedHashMap.this.clear();
+        }
+
         public final Iterator<K> iterator() {
             return new LinkedKeyIterator();
         }
-        public final boolean contains(Object o) { return containsKey(o); }
+
+        public final boolean contains(Object o) {
+            return containsKey(o);
+        }
+
         public final boolean remove(Object key) {
             return removeNode(hash(key), key, null, false, true) != null;
         }
+
         public final Spliterator<K> spliterator()  {
             return Spliterators.spliterator(this, Spliterator.SIZED |
                                             Spliterator.ORDERED |
                                             Spliterator.DISTINCT);
         }
+
         public final void forEach(Consumer<? super K> action) {
-            if (action == null)
+            if (action == null) {
                 throw new NullPointerException();
+            }
             int mc = modCount;
-            for (LinkedHashMap.Entry<K,V> e = head; e != null; e = e.after)
+            for (LinkedHashMap.Entry<K,V> e = head; e != null; e = e.after) {
                 action.accept(e.key);
-            if (modCount != mc)
+            }
+            if (modCount != mc) {
                 throw new ConcurrentModificationException();
+            }
         }
     }
 

@@ -695,6 +695,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
          * 
          */
         if ((p = tab[i = (n - 1) & hash]) == null) {
+            // @see LinkedHashMap#newNode
         	tab[i] = newNode(hash, key, value, null);
         } else {
             Node<K,V> e; K k;
