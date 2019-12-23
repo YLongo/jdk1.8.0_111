@@ -1251,7 +1251,7 @@ import static java.lang.invoke.MethodHandles.Lookup.IMPL_LOOKUP;
             T_BYTES = (byte[]) values[0];
         }
 
-        // The following class is used as a template for Unsafe.defineAnonymousClass:
+        // The following class is used as a template for sum.misc.Unsafe.defineAnonymousClass:
         private static class T {
             static void init() { }  // side effect: initializes this class
             static Object invoke_V(MethodHandle vamh, Object[] args) throws Throwable {

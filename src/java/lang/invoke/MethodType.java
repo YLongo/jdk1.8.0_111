@@ -1161,7 +1161,7 @@ s.writeObject(this.parameterArray());
 
     /**
      * For serialization only.
-     * Sets the final fields to null, pending {@code Unsafe.putObject}.
+     * Sets the final fields to null, pending {@code sum.misc.Unsafe.putObject}.
      */
     private MethodType() {
         this.rtype = null;

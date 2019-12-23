@@ -1027,7 +1027,7 @@ public class PriorityBlockingQueue<E> extends AbstractQueue<E>
         return new PBQSpliterator<E>(this, null, 0, -1);
     }
 
-    // Unsafe mechanics
+    // sum.misc.Unsafe mechanics
     private static final sun.misc.Unsafe UNSAFE;
     private static final long allocationSpinLockOffset;
     static {

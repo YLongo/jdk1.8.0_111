@@ -425,7 +425,7 @@ class DirectMethodHandle extends MethodHandle {
 
     @ForceInline
     /*non-public*/ static long fieldOffset(Object accessorObj) {
-        // Note: We return a long because that is what Unsafe.getObject likes.
+        // Note: We return a long because that is what sum.misc.Unsafe.getObject likes.
         // We store a plain int because it is more compact.
         return ((Accessor)accessorObj).fieldOffset;
     }
@@ -437,7 +437,7 @@ class DirectMethodHandle extends MethodHandle {
         // is either member.getDeclaringClass or a subclass.
         // This was verified in DirectMethodHandle.make.
         // Therefore, the only remaining check is for null.
-        // Since this check is *not* guaranteed by Unsafe.getInt
+        // Since this check is *not* guaranteed by sum.misc.Unsafe.getInt
         // and its siblings, we need to make an explicit one here.
         obj.getClass();  // maybe throw NPE
         return obj;

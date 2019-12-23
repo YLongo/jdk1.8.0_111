@@ -2409,7 +2409,7 @@ public final class Class<T> implements java.io.Serializable,
      * Atomic operations support.
      */
     private static class Atomic {
-        // initialize Unsafe machinery here, since we need to call Class.class instance method
+        // initialize sum.misc.Unsafe machinery here, since we need to call Class.class instance method
         // and have to avoid calling it in the static initializer of the Class class...
         private static final Unsafe unsafe = Unsafe.getUnsafe();
         // offset of Class.reflectionData instance field

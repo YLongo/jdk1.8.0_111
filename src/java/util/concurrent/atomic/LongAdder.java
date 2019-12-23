@@ -68,6 +68,7 @@ import java.io.Serializable;
  * @author Doug Lea
  */
 public class LongAdder extends Striped64 implements Serializable {
+
     private static final long serialVersionUID = 7249069246863182397L;
 
     /**
@@ -94,14 +95,16 @@ public class LongAdder extends Striped64 implements Serializable {
             boolean uncontended = true;
             
             if (as == null
-                    // 判断数组里面是否有元素，并给m赋值
+                        // 判断数组里面是否有元素，并给m赋值
             		|| (m = as.length - 1) < 0
-                    // 判断当前位置的元素是否为null。任何数与m进行与操作后的值都会<=m
-                    // getProbe可以获取当前线程中值的位置
-            		|| (a = as[getProbe() & m]) == null
-                    // 使用CAS更新当前位置中的值
+                       // 判断当前位置的元素是否为null。任何数与m进行与操作后的值都会<=m
+                       // getProbe获取当前线程中变量threadLoca!RandomProbe的值，初始值为0
+            		|| (a = as[getProbe() & m]) == null // 如果不为null，则表示当前位置有值，执行下个条件进行CAS更新操作
+                       // 使用CAS更新当前位置中的值
+                       // 如果更新失败，才会执行longAccumulate
             		|| !(uncontended = a.cas(v = a.value, v + x))) {
 
+                // 如果上面的更新操作都失败了，才会执行这个
             	longAccumulate(x, null, uncontended);
             }
         }
@@ -148,7 +151,7 @@ public class LongAdder extends Striped64 implements Serializable {
         return sum;
     }
 
-    /**
+    /**1
      * Resets variables maintaining the sum to zero.  This method may
      * be a useful alternative to creating a new adder, but is only
      * effective if there are no concurrent updates.  Because this

@@ -290,7 +290,7 @@ public class StampedLock implements java.io.Serializable {
      * to normal volatile reads (of "state").  To force orderings of
      * reads before a validation and the validation itself in those
      * cases where this is not already forced, we use
-     * Unsafe.loadFence.
+     * sum.misc.Unsafe.loadFence.
      *
      * The memory layout keeps lock state and queue pointers together
      * (normally on the same cache line). This usually works well for
@@ -1494,7 +1494,7 @@ public class StampedLock implements java.io.Serializable {
         return (interrupted || Thread.interrupted()) ? INTERRUPTED : 0L;
     }
 
-    // Unsafe mechanics
+    // sum.misc.Unsafe mechanics
     private static final sun.misc.Unsafe U;
     private static final long STATE;
     private static final long WHEAD;

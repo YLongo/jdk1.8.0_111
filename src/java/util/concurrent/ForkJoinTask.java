@@ -1508,7 +1508,7 @@ public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
             setExceptionalCompletion((Throwable)ex);
     }
 
-    // Unsafe mechanics
+    // sum.misc.Unsafe mechanics
     private static final sun.misc.Unsafe U;
     private static final long STATUS;
 

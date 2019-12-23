@@ -1976,7 +1976,7 @@ public class ObjectStreamClass implements Serializable {
             }
             /* assuming checkDefaultSerialize() has been called on the class
              * descriptor this FieldReflector was obtained from, no field keys
-             * in array should be equal to Unsafe.INVALID_FIELD_OFFSET.
+             * in array should be equal to sum.misc.Unsafe.INVALID_FIELD_OFFSET.
              */
             for (int i = 0; i < numPrimFields; i++) {
                 long key = readKeys[i];
@@ -2085,7 +2085,7 @@ public class ObjectStreamClass implements Serializable {
             }
             /* assuming checkDefaultSerialize() has been called on the class
              * descriptor this FieldReflector was obtained from, no field keys
-             * in array should be equal to Unsafe.INVALID_FIELD_OFFSET.
+             * in array should be equal to sum.misc.Unsafe.INVALID_FIELD_OFFSET.
              */
             for (int i = numPrimFields; i < fields.length; i++) {
                 switch (typeCodes[i]) {

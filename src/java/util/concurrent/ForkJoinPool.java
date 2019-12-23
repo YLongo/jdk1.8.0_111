@@ -415,7 +415,7 @@ public class ForkJoinPool extends AbstractExecutorService {
      * expressing access constraints. The most central operations,
      * taking from queues and updating ctl state, require full-fence
      * CAS.  Array slots are read using the emulation of volatiles
-     * provided by Unsafe.  Access from other threads to WorkQueue
+     * provided by sum.misc.Unsafe.  Access from other threads to WorkQueue
      * base, top, and array requires a volatile load of the first of
      * any of these read.  We use the convention of declaring the
      * "base" index volatile, and always read it before other fields.
@@ -648,7 +648,7 @@ public class ForkJoinPool extends AbstractExecutorService {
      * Style notes
      * ===========
      *
-     * Memory ordering relies mainly on Unsafe intrinsics that carry
+     * Memory ordering relies mainly on sum.misc.Unsafe intrinsics that carry
      * the further responsibility of explicitly performing null- and
      * bounds- checks otherwise carried out implicitly by JVMs.  This
      * can be awkward and ugly, but also reflects the need to control
@@ -1216,7 +1216,7 @@ public class ForkJoinPool extends AbstractExecutorService {
                     s != Thread.State.TIMED_WAITING);
         }
 
-        // Unsafe mechanics. Note that some are (and must be) the same as in FJP
+        // sum.misc.Unsafe mechanics. Note that some are (and must be) the same as in FJP
         private static final sun.misc.Unsafe U;
         private static final int  ABASE;
         private static final int  ASHIFT;
@@ -3336,7 +3336,7 @@ public class ForkJoinPool extends AbstractExecutorService {
         return new ForkJoinTask.AdaptedCallable<T>(callable);
     }
 
-    // Unsafe mechanics
+    // sum.misc.Unsafe mechanics
     private static final sun.misc.Unsafe U;
     private static final int  ABASE;
     private static final int  ASHIFT;

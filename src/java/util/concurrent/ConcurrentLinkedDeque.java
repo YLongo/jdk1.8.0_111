@@ -323,7 +323,7 @@ public class ConcurrentLinkedDeque<E>
             return UNSAFE.compareAndSwapObject(this, prevOffset, cmp, val);
         }
 
-        // Unsafe mechanics
+        // sum.misc.Unsafe mechanics
 
         private static final sun.misc.Unsafe UNSAFE;
         private static final long prevOffset;
@@ -1562,7 +1562,7 @@ public class ConcurrentLinkedDeque<E>
         return UNSAFE.compareAndSwapObject(this, tailOffset, cmp, val);
     }
 
-    // Unsafe mechanics
+    // sum.misc.Unsafe mechanics
 
     private static final sun.misc.Unsafe UNSAFE;
     private static final long headOffset;

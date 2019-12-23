@@ -280,7 +280,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
                 return match == this;
             }
 
-            // Unsafe mechanics
+            // sum.misc.Unsafe mechanics
             private static final sun.misc.Unsafe UNSAFE;
             private static final long matchOffset;
             private static final long nextOffset;
@@ -507,7 +507,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
             }
         }
 
-        // Unsafe mechanics
+        // sum.misc.Unsafe mechanics
         private static final sun.misc.Unsafe UNSAFE;
         private static final long headOffset;
         static {
@@ -575,7 +575,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
                 return next == this;
             }
 
-            // Unsafe mechanics
+            // sum.misc.Unsafe mechanics
             private static final sun.misc.Unsafe UNSAFE;
             private static final long itemOffset;
             private static final long nextOffset;
@@ -1199,7 +1199,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
             transferer = new TransferStack<E>();
     }
 
-    // Unsafe mechanics
+    // sum.misc.Unsafe mechanics
     static long objectFieldOffset(sun.misc.Unsafe UNSAFE,
                                   String field, Class<?> klazz) {
         try {

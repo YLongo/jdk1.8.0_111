@@ -2364,7 +2364,7 @@ public class CompletableFuture<T> implements Future<T>, CompletionStage<T> {
               "[Completed normally]"));
     }
 
-    // Unsafe mechanics
+    // sum.misc.Unsafe mechanics
     private static final sun.misc.Unsafe UNSAFE;
     private static final long RESULT;
     private static final long STACK;

@@ -444,7 +444,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
 
     /**
      * Queue nodes. Uses Object, not E, for items to allow forgetting
-     * them after use.  Relies heavily on Unsafe mechanics to minimize
+     * them after use.  Relies heavily on sum.misc.Unsafe mechanics to minimize
      * unnecessary ordering constraints: Writes that are intrinsically
      * ordered wrt other accesses or CASes use simple relaxed forms.
      */
@@ -537,7 +537,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
 
         private static final long serialVersionUID = -3375979862319811754L;
 
-        // Unsafe mechanics
+        // sum.misc.Unsafe mechanics
         private static final sun.misc.Unsafe UNSAFE;
         private static final long itemOffset;
         private static final long nextOffset;
@@ -1458,7 +1458,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
         }
     }
 
-    // Unsafe mechanics
+    // sum.misc.Unsafe mechanics
 
     private static final sun.misc.Unsafe UNSAFE;
     private static final long headOffset;

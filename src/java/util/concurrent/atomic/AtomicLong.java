@@ -54,7 +54,7 @@ import sun.misc.Unsafe;
 public class AtomicLong extends Number implements java.io.Serializable {
     private static final long serialVersionUID = 1927816293512124184L;
 
-    // setup to use Unsafe.compareAndSwapLong for updates
+    // setup to use sum.misc.Unsafe.compareAndSwapLong for updates
     // 获取Unsage实例，因为AtomicLong在rt.jar包下，是通过BootStarp类加载器进行加载的。所以可以这样获取
     // 如果我们自己想要使用，需要通过反射来获取
     private static final Unsafe unsafe = Unsafe.getUnsafe();
@@ -64,7 +64,7 @@ public class AtomicLong extends Number implements java.io.Serializable {
 
     /**
      * Records whether the underlying JVM supports lockless
-     * compareAndSwap for longs. While the Unsafe.compareAndSwapLong
+     * compareAndSwap for longs. While the sum.misc.Unsafe.compareAndSwapLong
      * method works in either case, some constructions should be
      * handled at Java level to avoid locking user-visible locks.
      */

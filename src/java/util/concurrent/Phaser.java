@@ -1144,7 +1144,7 @@ public class Phaser {
         }
     }
 
-    // Unsafe mechanics
+    // sum.misc.Unsafe mechanics
 
     private static final sun.misc.Unsafe UNSAFE;
     private static final long stateOffset;

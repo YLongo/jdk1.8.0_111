@@ -4424,7 +4424,7 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
             throw new java.io.StreamCorruptedException(message);
         }
 
-        // Commit final fields via Unsafe
+        // Commit final fields via sum.misc.Unsafe
         UnsafeHolder.putSign(this, sign);
 
         // Calculate mag field from magnitude and discard magnitude

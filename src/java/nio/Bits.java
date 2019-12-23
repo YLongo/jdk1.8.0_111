@@ -548,7 +548,7 @@ class Bits {                            // package-private
     }
 
 
-    // -- Unsafe access --
+    // -- sum.misc.Unsafe access --
 
     private static final Unsafe unsafe = Unsafe.getUnsafe();
 
@@ -771,7 +771,7 @@ class Bits {                            // package-private
     static final int JNI_COPY_TO_ARRAY_THRESHOLD   = 6;
     static final int JNI_COPY_FROM_ARRAY_THRESHOLD = 6;
 
-    // This number limits the number of bytes to copy per call to Unsafe's
+    // This number limits the number of bytes to copy per call to sum.misc.Unsafe's
     // copyMemory method. A limit is imposed to allow for safepoint polling
     // during a large copy
     static final long UNSAFE_COPY_THRESHOLD = 1024L * 1024L;

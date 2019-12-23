@@ -397,6 +397,7 @@ class Thread implements Runnable {
         this.name = name;
 
         Thread parent = currentThread();
+
         SecurityManager security = System.getSecurityManager();
         if (g == null) {
             /* Determine if it's an applet or not */
@@ -705,8 +706,7 @@ class Thread implements Runnable {
      *
      * @since 1.4
      */
-    public Thread(ThreadGroup group, Runnable target, String name,
-                  long stackSize) {
+    public Thread(ThreadGroup group, Runnable target, String name, long stackSize) {
         init(group, target, name, stackSize);
     }
 
@@ -1274,8 +1274,8 @@ class Thread implements Runnable {
      *          <i>interrupted status</i> of the current thread is
      *          cleared when this exception is thrown.
      */
-    public final synchronized void join(long millis)
-    throws InterruptedException {
+    public final synchronized void join(long millis) throws InterruptedException {
+
         long base = System.currentTimeMillis();
         long now = 0;
 
@@ -1324,8 +1324,7 @@ class Thread implements Runnable {
      *          <i>interrupted status</i> of the current thread is
      *          cleared when this exception is thrown.
      */
-    public final synchronized void join(long millis, int nanos)
-    throws InterruptedException {
+    public final synchronized void join(long millis, int nanos) throws InterruptedException {
 
         if (millis < 0) {
             throw new IllegalArgumentException("timeout value is negative");
@@ -1344,6 +1343,8 @@ class Thread implements Runnable {
     }
 
     /**
+     * 等待线程执行完成。
+     * <br>
      * Waits for this thread to die.
      *
      * <p> An invocation of this method behaves in exactly the same

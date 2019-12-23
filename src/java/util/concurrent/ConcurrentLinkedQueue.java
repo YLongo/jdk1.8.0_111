@@ -172,7 +172,7 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E>
      * this is merely an optimization.
      *
      * When constructing a Node (before enqueuing it) we avoid paying
-     * for a volatile write to item by using Unsafe.putObject instead
+     * for a volatile write to item by using sum.misc.Unsafe.putObject instead
      * of a normal write.  This allows the cost of enqueue to be
      * "one-and-a-half" CASes.
      *
@@ -208,7 +208,7 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E>
             return UNSAFE.compareAndSwapObject(this, nextOffset, cmp, val);
         }
 
-        // Unsafe mechanics
+        // sum.misc.Unsafe mechanics
 
         private static final sun.misc.Unsafe UNSAFE;
         private static final long itemOffset;
@@ -951,7 +951,7 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E>
         return UNSAFE.compareAndSwapObject(this, headOffset, cmp, val);
     }
 
-    // Unsafe mechanics
+    // sum.misc.Unsafe mechanics
 
     private static final sun.misc.Unsafe UNSAFE;
     private static final long headOffset;

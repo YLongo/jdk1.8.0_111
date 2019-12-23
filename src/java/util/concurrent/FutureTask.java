@@ -70,7 +70,7 @@ public class FutureTask<V> implements RunnableFuture<V> {
      * with a simple Treiber stack to hold waiting threads.
      *
      * Style note: As usual, we bypass overhead of using
-     * AtomicXFieldUpdaters and instead directly use Unsafe intrinsics.
+     * AtomicXFieldUpdaters and instead directly use sum.misc.Unsafe intrinsics.
      */
 
     /**
@@ -463,7 +463,7 @@ public class FutureTask<V> implements RunnableFuture<V> {
         }
     }
 
-    // Unsafe mechanics
+    // sum.misc.Unsafe mechanics
     private static final sun.misc.Unsafe UNSAFE;
     private static final long stateOffset;
     private static final long runnerOffset;

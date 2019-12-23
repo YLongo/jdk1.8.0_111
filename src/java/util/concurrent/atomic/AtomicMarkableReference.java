@@ -188,7 +188,7 @@ public class AtomicMarkableReference<V> {
              casPair(current, Pair.of(expectedReference, newMark)));
     }
 
-    // Unsafe mechanics
+    // sum.misc.Unsafe mechanics
 
     private static final sun.misc.Unsafe UNSAFE = sun.misc.Unsafe.getUnsafe();
     private static final long pairOffset =

@@ -616,7 +616,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
             return node.value != null && casRight(succ, succ.right);
         }
 
-        // Unsafe mechanics
+        // sum.misc.Unsafe mechanics
         private static final sun.misc.Unsafe UNSAFE;
         private static final long rightOffset;
         static {
@@ -3577,7 +3577,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
         }
     }
 
-    // Unsafe mechanics
+    // sum.misc.Unsafe mechanics
     private static final sun.misc.Unsafe UNSAFE;
     private static final long headOffset;
     private static final long SECONDARY;

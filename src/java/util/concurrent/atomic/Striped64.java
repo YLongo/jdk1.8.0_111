@@ -130,7 +130,7 @@ abstract class Striped64 extends Number {
             return UNSAFE.compareAndSwapLong(this, valueOffset, cmp, val);
         }
 
-        // Unsafe mechanics
+        // sum.misc.Unsafe mechanics
         private static final sun.misc.Unsafe UNSAFE;
         private static final long valueOffset;
         static {
@@ -175,6 +175,7 @@ abstract class Striped64 extends Number {
      * CASes the base field.
      */
     final boolean casBase(long cmp, long val) {
+        // 如果当前值是cmp，则将BASE更新为val
         return UNSAFE.compareAndSwapLong(this, BASE, cmp, val);
     }
 
@@ -228,14 +229,21 @@ abstract class Striped64 extends Number {
         }
         boolean collide = false;                // True if last slot nonempty
         for (;;) {
+
             Cell[] as; Cell a; int n; long v;
+
             if ((as = cells) != null && (n = as.length) > 0) {
-                // 如果发现当前的槽位已经有元素，则会去重新计算h的值
+
+                // 如果发现当前的槽位没有元素，则准备新建一个Cell放入数组中
                 if ((a = as[(n - 1) & h]) == null) {
+
                     if (cellsBusy == 0) {       // Try to attach new Cell
+
                         Cell r = new Cell(x);   // Optimistically create
-                        // 将状态位的值设置为1，表示正在新建Cell元素
+
+                        // casCellsBusy()将状态位的值设置为1，表示正在新建Cell元素
                         if (cellsBusy == 0 && casCellsBusy()) {
+
                             boolean created = false;
                             try { // Recheck under lock
                                 Cell[] rs; int m, j;
@@ -272,6 +280,7 @@ abstract class Striped64 extends Number {
                 } else if (!collide) {
                     collide = true;
                 // 如果当前元素的数量少于CPU的个数，并且上面的CAS操作失败，即有多个线程同时操作同一个元素时
+                // casCellsBusy()会将cellsBusy的值更新为1，表示正在扩容
                 } else if (cellsBusy == 0 && casCellsBusy()) {
                     try {
                         if (cells == as) {      // Expand table unless stale
@@ -288,9 +297,11 @@ abstract class Striped64 extends Number {
                     collide = false;
                     continue;                   // Retry with expanded table
                 }
-                // 重新计算随机数的值来获取Cell数组中的位置
+
+                // 如果当前位置已经有元素了，则重新计算随机数的值来获取Cell数组中的位置
                 h = advanceProbe(h);
-                // 第一次调用时，初始化Cell数组
+
+                // 初始化Cell数组
                 // 并将cellsBusy的值设置为1，表示正在进行新建，那么其它线程只能等待
             } else if (cellsBusy == 0 && cells == as && casCellsBusy()) {
                 boolean init = false;
@@ -409,7 +420,7 @@ abstract class Striped64 extends Number {
         }
     }
 
-    // Unsafe mechanics
+    // sum.misc.Unsafe mechanics
     private static final sun.misc.Unsafe UNSAFE;
     private static final long BASE;
     private static final long CELLSBUSY;

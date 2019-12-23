@@ -735,6 +735,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                 	// 使用新值覆盖旧值
                 	e.value = value;
                 }
+                // @see LinkedHashMap#afterNodeAccess
                 afterNodeAccess(e);
                 // 返回旧的 value
                 return oldValue;
@@ -748,6 +749,8 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         	resize();
         }
 
+        // @see LinkedHashMap#afterNodeInsertion
+        // 移除存在时间最长的元素
         afterNodeInsertion(evict);
 
         return null;

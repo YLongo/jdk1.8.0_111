@@ -49,7 +49,7 @@ class MethodHandleNatives {
     static native int getMembers(Class<?> defc, String matchName, String matchSig,
             int matchFlags, Class<?> caller, int skip, MemberName[] results);
 
-    /// Field layout queries parallel to sun.misc.Unsafe:
+    /// Field layout queries parallel to sun.misc.sum.misc.Unsafe:
     static native long objectFieldOffset(MemberName self);  // e.g., returns vmindex
     static native long staticFieldOffset(MemberName self);  // e.g., returns vmindex
     static native Object staticFieldBase(MemberName self);  // e.g., returns clazz

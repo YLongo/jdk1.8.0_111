@@ -877,7 +877,7 @@ public class Parser implements Constants, ContentHandler {
 
         // The following functions are implemented in the basis library
         _symbolTable.addPrimop("count", I_D);
-        _symbolTable.addPrimop("sum", R_D);
+        _symbolTable.addPrimop("sun/reflect", R_D);
         _symbolTable.addPrimop("local-name", S_V);
         _symbolTable.addPrimop("local-name", S_D);
         _symbolTable.addPrimop("namespace-uri", S_V);

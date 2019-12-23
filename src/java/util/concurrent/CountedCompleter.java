@@ -752,7 +752,7 @@ public abstract class CountedCompleter<T> extends ForkJoinTask<T> {
      */
     protected void setRawResult(T t) { }
 
-    // Unsafe mechanics
+    // sum.misc.Unsafe mechanics
     private static final sun.misc.Unsafe U;
     private static final long PENDING;
     static {

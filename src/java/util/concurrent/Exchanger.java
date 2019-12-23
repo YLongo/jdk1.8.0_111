@@ -237,7 +237,7 @@ public class Exchanger<V> {
      * because most of the logic relies on reads of fields that are
      * maintained as local variables so can't be nicely factored --
      * mainly, here, bulky spin->yield->block/cancel code), and
-     * heavily dependent on intrinsics (Unsafe) to use inlined
+     * heavily dependent on intrinsics (sum.misc.Unsafe) to use inlined
      * embedded CAS and related memory access operations (that tend
      * not to be as readily inlined by dynamic compilers when they are
      * hidden behind other methods that would more nicely name and
@@ -627,7 +627,7 @@ public class Exchanger<V> {
         return (v == NULL_ITEM) ? null : (V)v;
     }
 
-    // Unsafe mechanics
+    // sum.misc.Unsafe mechanics
     private static final sun.misc.Unsafe U;
     private static final long BOUND;
     private static final long SLOT;

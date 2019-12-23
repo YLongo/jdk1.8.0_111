@@ -104,7 +104,7 @@ public class ThreadLocalRandom extends Random {
      * though, we use only a single 64bit gamma.
      *
      * Because this class is in a different package than class Thread,
-     * field access methods use Unsafe to bypass access control rules.
+     * field access methods use sum.misc.Unsafe to bypass access control rules.
      * To conform to the requirements of the Random superclass
      * constructor, the common static ThreadLocalRandom maintains an
      * "initialized" field for the sake of rejecting user calls to
@@ -1071,7 +1071,7 @@ public class ThreadLocalRandom extends Random {
         return current();
     }
 
-    // Unsafe mechanics
+    // sum.misc.Unsafe mechanics
     private static final sun.misc.Unsafe UNSAFE;
     private static final long SEED;
     private static final long PROBE;

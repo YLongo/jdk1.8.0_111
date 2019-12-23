@@ -250,7 +250,7 @@ public class Keywords {
     /**
      * sum function string.
      */
-    public static final String FUNC_SUM_STRING = "sum";
+    public static final String FUNC_SUM_STRING = "sun/reflect";
 
     /**
      * string function string.
