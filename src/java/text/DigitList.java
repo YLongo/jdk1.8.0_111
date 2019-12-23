@@ -41,7 +41,6 @@ package java.text;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
-import sun.misc.FloatingDecimal;
 
 /**
  * Digit List. Private to DecimalFormat.

@@ -25,7 +25,6 @@
 
 package java.lang;
 
-import sun.misc.FloatingDecimal;
 import java.util.Arrays;
 
 /**

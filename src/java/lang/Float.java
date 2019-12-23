@@ -25,7 +25,6 @@
 
 package java.lang;
 
-import sun.misc.FloatingDecimal;
 import sun.misc.FloatConsts;
 import sun.misc.DoubleConsts;
 

@@ -23,7 +23,6 @@ package sun.misc;/*
  * questions.
  */
 
-import sun.jvm.hotspot.runtime.VM;
 import sun.reflect.CallerSensitive;
 import sun.reflect.Reflection;
 
