@@ -955,7 +955,8 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      * @return {@code true} if interrupted
      */
     private final boolean parkAndCheckInterrupt() {
-        // 阻塞当前线程
+
+        // 将自己挂起（当前线程会阻塞在这个问题，等待其他线程调用unpark方法）
         LockSupport.park(this);
         /*
          * 如果当线程被中断，会清除中断标记
@@ -986,7 +987,9 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
         boolean failed = true;
         try {
             boolean interrupted = false;
+
             for (;;) {
+
             	// 获取当前节点的前驱节点
                 final Node p = node.predecessor();
                 
