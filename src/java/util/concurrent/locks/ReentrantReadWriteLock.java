@@ -456,7 +456,7 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
                 return true;
             }
             // 如果 c = 0，表示还没有线程获取锁
-            if (writerShouldBlock() // 写锁永不阻塞 
+            if (writerShouldBlock() // 非公平写锁永不阻塞
                     || !compareAndSetState(c, c + acquires)) { // 如果获取锁失败
                 return false;
             }

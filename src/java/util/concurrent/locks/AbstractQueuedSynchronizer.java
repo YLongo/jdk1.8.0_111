@@ -960,7 +960,6 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
         LockSupport.park(this);
         /*
          * 如果当线程被中断，会清除中断标记
-         * 这也是为什么 acquire 方法不会响应中断的原因
          * 在获取锁之后，再调用 selfInterrupt 进行自我中断
          */
         return Thread.interrupted();
@@ -1419,9 +1418,12 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      * @return the value returned from {@link #tryRelease}
      */
     public final boolean release(int arg) {
+
+        // 返回true表示锁已经被释放了，否则还是被占有
         if (tryRelease(arg)) {
             Node h = head;
             if (h != null && h.waitStatus != 0) {
+                // 唤醒当前节点的下一个节点
                 unparkSuccessor(h);
             }
             return true;
@@ -2540,3 +2542,4 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
         return unsafe.compareAndSwapObject(node, nextOffset, expect, update);
     }
 }
+
