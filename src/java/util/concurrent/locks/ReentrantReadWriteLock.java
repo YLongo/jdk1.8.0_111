@@ -455,6 +455,7 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
                 setState(c + acquires);
                 return true;
             }
+
             // 如果 c = 0，表示还没有线程获取锁
             if (writerShouldBlock() // 非公平写锁永不阻塞
                     || !compareAndSetState(c, c + acquires)) { // 如果获取锁失败
@@ -569,7 +570,10 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
                 }
                 return 1;
             }
-            // 如果尝试获取读锁失败，则进行这个操作
+            /*
+             * 如果尝试获取读锁失败，则进行这个操作
+             * 因为当多个线程同时去获取读锁，上面CAS的操作只有一个线程会成功，其它线程就需要通过下面这个操作重新去获取读锁
+             */
             return fullTryAcquireShared(current);
         }
 
