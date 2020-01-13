@@ -786,20 +786,26 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
          * fails, if so rechecking.
          */
         for (;;) {
+
             Node h = head;
+
             if (h != null && h != tail) {
                 int ws = h.waitStatus;
+
                 if (ws == Node.SIGNAL) {
-                    if (!compareAndSetWaitStatus(h, Node.SIGNAL, 0))
+                    if (!compareAndSetWaitStatus(h, Node.SIGNAL, 0)) {
                         continue;            // loop to recheck cases
+                    }
+                    // 唤醒阻塞的主线程
                     unparkSuccessor(h);
-                }
-                else if (ws == 0 &&
-                         !compareAndSetWaitStatus(h, 0, Node.PROPAGATE))
+                } else if (ws == 0 && !compareAndSetWaitStatus(h, 0, Node.PROPAGATE)) {
                     continue;                // loop on failed CAS
+                }
             }
-            if (h == head)                   // loop if head changed
+
+            if (h == head) { // loop if head changed
                 break;
+            }
         }
     }
 
@@ -1124,10 +1130,10 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      * Acquires in shared interruptible mode.
      * @param arg the acquire argument
      */
-    private void doAcquireSharedInterruptibly(int arg)
-        throws InterruptedException {
+    private void doAcquireSharedInterruptibly(int arg) throws InterruptedException {
         final Node node = addWaiter(Node.SHARED);
         boolean failed = true;
+
         try {
             for (;;) {
                 final Node p = node.predecessor();
@@ -1140,13 +1146,15 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
                         return;
                     }
                 }
-                if (shouldParkAfterFailedAcquire(p, node) &&
-                    parkAndCheckInterrupt())
+                // 将当前线程挂起
+                if (shouldParkAfterFailedAcquire(p, node) && parkAndCheckInterrupt()) {
                     throw new InterruptedException();
+                }
             }
         } finally {
-            if (failed)
+            if (failed) {
                 cancelAcquire(node);
+            }
         }
     }
 
@@ -1463,12 +1471,15 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      * you like.
      * @throws InterruptedException if the current thread is interrupted
      */
-    public final void acquireSharedInterruptibly(int arg)
-            throws InterruptedException {
-        if (Thread.interrupted())
+    public final void acquireSharedInterruptibly(int arg) throws InterruptedException {
+        if (Thread.interrupted()) {
             throw new InterruptedException();
-        if (tryAcquireShared(arg) < 0)
+        }
+        // 根据state的值判断当前是否有线程还未执行完成
+        if (tryAcquireShared(arg) < 0) {
+            // 如果有，则将主线程挂起阻塞
             doAcquireSharedInterruptibly(arg);
+        }
     }
 
     /**
@@ -1505,10 +1516,17 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      * @return the value returned from {@link #tryReleaseShared}
      */
     public final boolean releaseShared(int arg) {
+
+        // 将state的值进行减1，并判断减1后的值是否为0
         if (tryReleaseShared(arg)) {
+            /*
+             * 如果state的值变为0了，说明所有线程都执行完了
+             * 这个时候就可以将在队列中等待的主线程给唤醒了
+             */
             doReleaseShared();
             return true;
         }
+
         return false;
     }
 
@@ -1863,10 +1881,12 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
          * attempt to set waitStatus fails, wake up to resync (in which
          * case the waitStatus can be transiently and harmlessly wrong).
          */
+        // 将条件队列中的节点转移到阻塞队列中，用于竞争锁
         Node p = enq(node);
         int ws = p.waitStatus;
+
         if (ws > 0 || !compareAndSetWaitStatus(p, ws, Node.SIGNAL)) {
-        	// 释放当前线程
+        	// 释放节点对应的线程
         	LockSupport.unpark(node.thread);
         }
         return true;
@@ -2154,7 +2174,6 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
         	/* 
         	 * 是否在独占模式下。即判断线程独占者是否是当前线程
         	 * 所以在调用 signal 方法之前，需要调用 lock 方法
-        	 * 
         	 */
             if (!isHeldExclusively()) {
             	throw new IllegalMonitorStateException();
@@ -2270,6 +2289,7 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
                 	break;
                 }
             }
+            // 在阻塞队列被唤醒后去获取锁
             if (acquireQueued(node, savedState) && interruptMode != THROW_IE)
                 interruptMode = REINTERRUPT;
             if (node.nextWaiter != null) // clean up if cancelled

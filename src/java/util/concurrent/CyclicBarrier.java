@@ -152,13 +152,24 @@ public class CyclicBarrier {
         boolean broken = false;
     }
 
+    /*
+     * 实际是通过ReentrantLock中的Condition来实现这个效果的
+     */
     /** The lock for guarding barrier entry */
     private final ReentrantLock lock = new ReentrantLock();
     /** Condition to wait on until tripped */
     private final Condition trip = lock.newCondition();
-    /** The number of parties */
+
+    /**
+     * The number of parties
+     *
+     * 这个参数的主要作用是来保存count的值，因为实际操作的是count。这个值可以重复使用。
+     * */
     private final int parties;
-    /* The command to run when tripped */
+
+    /* The command to run when tripped
+     * 当计数器为0时，执行Runnable的run()方法（注意：是通过Runnable对象直接调用run()方法）
+     */
     private final Runnable barrierCommand;
     /** The current generation */
     private Generation generation = new Generation();
@@ -176,6 +187,7 @@ public class CyclicBarrier {
      */
     private void nextGeneration() {
         // signal completion of last generation
+        // 唤醒所有线程
         trip.signalAll();
         // set up next generation
         count = parties;
@@ -189,51 +201,56 @@ public class CyclicBarrier {
     private void breakBarrier() {
         generation.broken = true;
         count = parties;
+        // 唤醒所有线程，会将所有线程从条件队列转移到阻塞队列中
         trip.signalAll();
     }
 
     /**
      * Main barrier code, covering the various policies.
      */
-    private int dowait(boolean timed, long nanos)
-        throws InterruptedException, BrokenBarrierException,
-               TimeoutException {
+    private int dowait(boolean timed, long nanos) throws InterruptedException, BrokenBarrierException, TimeoutException {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
             final Generation g = generation;
-
-            if (g.broken)
+            if (g.broken) {
                 throw new BrokenBarrierException();
-
+            }
+            // 如果线程被中断
             if (Thread.interrupted()) {
+                // 则唤醒所有线程
                 breakBarrier();
                 throw new InterruptedException();
             }
-
             int index = --count;
+            // 当计数器的值为0，表示所有线程都全部准备好了
             if (index == 0) {  // tripped
                 boolean ranAction = false;
                 try {
+                    // 执行指定的run()方法
                     final Runnable command = barrierCommand;
-                    if (command != null)
+                    if (command != null) {
                         command.run();
+                    }
                     ranAction = true;
+                    // 唤醒所有线程开始继续往下执行
                     nextGeneration();
                     return 0;
                 } finally {
-                    if (!ranAction)
+                    if (!ranAction) {
                         breakBarrier();
+                    }
                 }
             }
-
             // loop until tripped, broken, interrupted, or timed out
             for (;;) {
                 try {
-                    if (!timed)
+                    if (!timed) {
+                        // 如果计数值不为0，则会挂起当前线程
                         trip.await();
-                    else if (nanos > 0L)
+                    } else if (nanos > 0L) {
                         nanos = trip.awaitNanos(nanos);
+                    }
                 } catch (InterruptedException ie) {
                     if (g == generation && ! g.broken) {
                         breakBarrier();
@@ -245,13 +262,12 @@ public class CyclicBarrier {
                         Thread.currentThread().interrupt();
                     }
                 }
-
-                if (g.broken)
+                if (g.broken) {
                     throw new BrokenBarrierException();
-
-                if (g != generation)
+                }
+                if (g != generation) {
                     return index;
-
+                }
                 if (timed && nanos <= 0L) {
                     breakBarrier();
                     throw new TimeoutException();
@@ -275,7 +291,9 @@ public class CyclicBarrier {
      * @throws IllegalArgumentException if {@code parties} is less than 1
      */
     public CyclicBarrier(int parties, Runnable barrierAction) {
-        if (parties <= 0) throw new IllegalArgumentException();
+        if (parties <= 0) {
+            throw new IllegalArgumentException();
+        }
         this.parties = parties;
         this.count = parties;
         this.barrierCommand = barrierAction;
@@ -287,7 +305,7 @@ public class CyclicBarrier {
      * does not perform a predefined action when the barrier is tripped.
      *
      * @param parties the number of threads that must invoke {@link #await}
-     *        before the barrier is tripped
+     *        before the barrier is tripped 可以被允许一起执行的线程
      * @throws IllegalArgumentException if {@code parties} is less than 1
      */
     public CyclicBarrier(int parties) {
@@ -428,10 +446,7 @@ public class CyclicBarrier {
      *         when {@code await} was called, or the barrier action (if
      *         present) failed due to an exception
      */
-    public int await(long timeout, TimeUnit unit)
-        throws InterruptedException,
-               BrokenBarrierException,
-               TimeoutException {
+    public int await(long timeout, TimeUnit unit) throws InterruptedException, BrokenBarrierException, TimeoutException {
         return dowait(true, unit.toNanos(timeout));
     }
 
