@@ -176,22 +176,29 @@ public class Semaphore implements java.io.Serializable {
 
         final int nonfairTryAcquireShared(int acquires) {
             for (;;) {
+                // 获取当前state的值
                 int available = getState();
                 int remaining = available - acquires;
+                // 如果剩余许可量大于0则通过CAS设置到state中
                 if (remaining < 0 || compareAndSetState(available, remaining)) {
                 	return remaining;
                 }
             }
         }
 
+        /**
+         * 一直循环尝试更新state的值，直到更新成功
+         */
         protected final boolean tryReleaseShared(int releases) {
             for (;;) {
                 int current = getState();
                 int next = current + releases;
-                if (next < current) // overflow
+                if (next < current) {// overflow
                     throw new Error("Maximum permit count exceeded");
-                if (compareAndSetState(current, next))
+                }
+                if (compareAndSetState(current, next)) {
                     return true;
+                }
             }
         }
 
