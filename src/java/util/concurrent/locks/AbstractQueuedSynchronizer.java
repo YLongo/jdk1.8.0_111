@@ -1131,6 +1131,7 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      * @param arg the acquire argument
      */
     private void doAcquireSharedInterruptibly(int arg) throws InterruptedException {
+
         final Node node = addWaiter(Node.SHARED);
         boolean failed = true;
 
@@ -1489,7 +1490,7 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
     }
 
     /**
-     * Attempts to acquire in shared mode, aborting if interrupted, and
+     * Attempts to a    cquire in shared mode, aborting if interrupted, and
      * failing if the given timeout elapses.  Implemented by first
      * checking interrupt status, then invoking at least once {@link
      * #tryAcquireShared}, returning on success.  Otherwise, the
@@ -1523,7 +1524,7 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      */
     public final boolean releaseShared(int arg) {
 
-        // 将state的值进行减1，并判断减1后的值是否为0
+        // 将state的值进行减1
         if (tryReleaseShared(arg)) {
             /*
              * 如果state的值变为0了，说明所有线程都执行完了
