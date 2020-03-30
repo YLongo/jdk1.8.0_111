@@ -1092,7 +1092,8 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
         if (key == null || value == null) {
         	throw new NullPointerException();
         }
-        
+
+        // 高低16位异或，将hash值打散，尽量减少冲突
         int hash = spread(key.hashCode());
         
         int binCount = 0;
@@ -1110,10 +1111,10 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
             	
                 /*
                  * 为什么要使用 tabAt 去获取数组中的值，而不直接使用 tab[i] 来获取？
-                 *   如果 tab 具有 volatile 语义性，也是需要这样操作的，因为 volatile 只能保证数组中的引用可见，但是不会保证引用所引用的值可见
+                 *     如果 tab 具有 volatile 语义性，也是需要这样操作的，因为 volatile 只能保证数组中的引用可见，但是不会保证引用所引用的值可见
                  */
             } else if ((f = tabAt(tab, i = (n - 1) & hash)) == null) { // 如果该位置上没有元素
-                
+                // 如果有多个线程同时操作同一个位置的元素时，CAS时只会有一个会成功。失败的线程则进行下一轮for循环，再进行一次CAS操作
                 // 如果 i 位置的值为 null，那么就新建一个 node 插入
                 if (casTabAt(tab, i, null, new Node<K,V>(hash, key, value, null))) {
                 	break;                   // no lock when adding to empty bin
