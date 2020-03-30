@@ -34,12 +34,12 @@
  */
 
 package java.util.concurrent.locks;
-import sun.misc.Unsafe;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
+
+import sun.misc.Unsafe;
 
 /**
  * Provides a framework for implementing blocking locks and related
@@ -1133,7 +1133,7 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
     private void doAcquireSharedInterruptibly(int arg) throws InterruptedException {
         final Node node = addWaiter(Node.SHARED);
         boolean failed = true;
-
+        
         try {
             for (;;) {
                 final Node p = node.predecessor();
@@ -1475,13 +1475,7 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
         if (Thread.interrupted()) {
             throw new InterruptedException();
         }
-        /*
-         * 根据state的值判断当前是否有线程还未执行完成
-         *
-         * Semaphore是通过判断state的值是否大于0来判断是否还可以获取许可：
-         *   如果大于0，则可以；否则就会被阻塞
-         *
-         */
+        // 根据state的值判断当前是否有线程还未执行完成
         if (tryAcquireShared(arg) < 0) {
             // 如果有，则将主线程挂起阻塞
             doAcquireSharedInterruptibly(arg);
@@ -1528,8 +1522,6 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
             /*
              * 如果state的值变为0了，说明所有线程都执行完了
              * 这个时候就可以将在队列中等待的主线程给唤醒了
-             *
-             * 在Semaphore中则是state的值大于0，表示有可用信号量，其它线程可以去获取
              */
             doReleaseShared();
             return true;
