@@ -25,6 +25,8 @@
 
 package java.io;
 
+import sun.reflect.misc.ReflectUtil;
+
 import java.io.ObjectStreamClass.WeakClassKey;
 import java.lang.ref.ReferenceQueue;
 import java.security.AccessController;
@@ -34,9 +36,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
 import static java.io.ObjectStreamClass.processQueue;
-import java.io.SerialCallbackContext;
-import sun.reflect.misc.ReflectUtil;
 
 /**
  * An ObjectOutputStream writes primitive data types and graphs of Java objects
@@ -340,11 +341,14 @@ public class ObjectOutputStream
      *          OutputStream.
      */
     public final void writeObject(Object obj) throws IOException {
+        // 默认为false
         if (enableOverride) {
             writeObjectOverride(obj);
             return;
         }
+
         try {
+            // 调用自定义实现的writeObject方法
             writeObject0(obj, false);
         } catch (IOException ex) {
             if (depth == 0) {
@@ -1102,9 +1106,8 @@ public class ObjectOutputStream
     /**
      * Underlying writeObject/writeUnshared implementation.
      */
-    private void writeObject0(Object obj, boolean unshared)
-        throws IOException
-    {
+    private void writeObject0(Object obj, boolean unshared) throws IOException {
+
         boolean oldMode = bout.setBlockDataMode(false);
         depth++;
         try {
@@ -1174,7 +1177,7 @@ public class ObjectOutputStream
                 writeArray(obj, desc, unshared);
             } else if (obj instanceof Enum) {
                 writeEnum((Enum<?>) obj, desc, unshared);
-            } else if (obj instanceof Serializable) {
+            } else if (obj instanceof Serializable) { // 如果某个类实现了Serializable接口
                 writeOrdinaryObject(obj, desc, unshared);
             } else {
                 if (extendedDebugInfo) {
@@ -1410,16 +1413,14 @@ public class ObjectOutputStream
      * ObjectStreamClass, array, or enum constant) serializable object to the
      * stream.
      */
-    private void writeOrdinaryObject(Object obj,
-                                     ObjectStreamClass desc,
-                                     boolean unshared)
-        throws IOException
-    {
+    private void writeOrdinaryObject(Object obj, ObjectStreamClass desc, boolean unshared) throws IOException {
+
         if (extendedDebugInfo) {
             debugInfoStack.push(
                 (depth == 1 ? "root " : "") + "object (class \"" +
                 obj.getClass().getName() + "\", " + obj.toString() + ")");
         }
+
         try {
             desc.checkSerialize();
 
@@ -1429,6 +1430,7 @@ public class ObjectOutputStream
             if (desc.isExternalizable() && !desc.isProxy()) {
                 writeExternalData((Externalizable) obj);
             } else {
+                // 调用实现了序列化的方法
                 writeSerialData(obj, desc);
             }
         } finally {
@@ -1474,11 +1476,12 @@ public class ObjectOutputStream
      * Writes instance data for each serializable class of given object, from
      * superclass to subclass.
      */
-    private void writeSerialData(Object obj, ObjectStreamClass desc)
-        throws IOException
-    {
+    private void writeSerialData(Object obj, ObjectStreamClass desc) throws IOException {
+
         ObjectStreamClass.ClassDataSlot[] slots = desc.getClassDataLayout();
+
         for (int i = 0; i < slots.length; i++) {
+
             ObjectStreamClass slotDesc = slots[i].desc;
             if (slotDesc.hasWriteObjectMethod()) {
                 PutFieldImpl oldPut = curPut;
@@ -1486,14 +1489,14 @@ public class ObjectOutputStream
                 SerialCallbackContext oldContext = curContext;
 
                 if (extendedDebugInfo) {
-                    debugInfoStack.push(
-                        "custom writeObject data (class \"" +
-                        slotDesc.getName() + "\")");
+                    debugInfoStack.push("custom writeObject data (class \"" + slotDesc.getName() + "\")");
                 }
                 try {
                     curContext = new SerialCallbackContext(obj, slotDesc);
                     bout.setBlockDataMode(true);
+                    // 通过反射的方式调用对象自定义的方法
                     slotDesc.invokeWriteObject(obj, this);
+
                     bout.setBlockDataMode(false);
                     bout.writeByte(TC_ENDBLOCKDATA);
                 } finally {

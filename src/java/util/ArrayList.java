@@ -130,10 +130,18 @@ public class ArrayList<E> extends AbstractList<E>
      * The capacity of the ArrayList is the length of this array buffer. Any
      * empty ArrayList with elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA
      * will be expanded to DEFAULT_CAPACITY when the first element is added. <br>
+     * <pre>
      * 容量变化为：10
      *           10 + 10/2 = 15
      *           15 -> 15 + 15/2 = 22
      *           22 -> 22 + 22/2 = 33
+     * </pre>
+     * <br>
+     * -----
+     *
+     * 如果数组的长度设为100，而实际只放了一个元素，那就会序列化99个null元素。
+     * 为了保证在序列化的时候不会将这么多null同时进行序列化，所以设置为transient
+     *
      */
     transient Object[] elementData; // non-private to simplify nested class access
 
