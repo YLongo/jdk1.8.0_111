@@ -1125,8 +1125,8 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
             } else {
                 V oldVal = null;
                 /*
-                 * 但是可以不加锁吗？因为都是使用 CAS 去操作，不加锁是不是也是可以的？
-                 * 还是说在多线程的情况下，发生修改的次数多，会导致 CAS 自旋的时间变长？
+                 * 在对这个节点赋值的时候，发现该节点的已经被赋过值了，所以才进入到这里
+                 * f就是数组当前节点已经被赋值了，所以只会对这一个节点加锁（分段加锁思想）
                  */
                 synchronized (f) { // 对第一节点进行加锁。
                     if (tabAt(tab, i) == f) {
