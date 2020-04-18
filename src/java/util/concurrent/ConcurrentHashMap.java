@@ -812,7 +812,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
     }
 
     static final <K,V> boolean casTabAt(Node<K,V>[] tab, int i, Node<K,V> c, Node<K,V> v) {
-        // TODO why this?
+        // 如果有多个线程在同时进行赋值操作，使用CAS可以保证线程安全
         return U.compareAndSwapObject(tab, ((long)i << ASHIFT) + ABASE, c, v);
     }
 
@@ -978,6 +978,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      */
     public int size() {
         long n = sumCount();
+        // 如果Map的大小大于了最大值，那么返回最大值，否则返回当前数组实际的大小
         return ((n < 0L) ? 0 :
                 (n > (long)Integer.MAX_VALUE) ? Integer.MAX_VALUE :
                 (int)n);
@@ -1002,22 +1003,29 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * @throws NullPointerException if the specified key is null
      */
     public V get(Object key) {
+
         Node<K,V>[] tab; Node<K,V> e, p; int n, eh; K ek;
+
         int h = spread(key.hashCode());
+
         if ((tab = table) != null && (n = tab.length) > 0 &&
-            (e = tabAt(tab, (n - 1) & h)) != null) {
+            (e = tabAt(tab, (n - 1) & h)) != null) { // 通过CAS去获取当前位置上的值
+
             if ((eh = e.hash) == h) {
-                if ((ek = e.key) == key || (ek != null && key.equals(ek)))
+                if ((ek = e.key) == key || (ek != null && key.equals(ek))) {
                     return e.val;
-            }
-            else if (eh < 0)
+                }
+            } else if (eh < 0) { // 如果是红黑树
                 return (p = e.find(h, key)) != null ? p.val : null;
-            while ((e = e.next) != null) {
-                if (e.hash == h &&
-                    ((ek = e.key) == key || (ek != null && key.equals(ek))))
+            }
+
+            while ((e = e.next) != null) { // 如果是链表
+                if (e.hash == h && ((ek = e.key) == key || (ek != null && key.equals(ek)))) {
                     return e.val;
+                }
             }
         }
+
         return null;
     }
 
@@ -1106,7 +1114,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
             
             // 初始化
             if (tab == null || (n = tab.length) == 0) {
-            	
+            	// 初始化数组大小，默认为16
                 tab = initTable();
             	
                 /*
@@ -1114,7 +1122,8 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                  *     如果 tab 具有 volatile 语义性，也是需要这样操作的，因为 volatile 只能保证数组中的引用可见，但是不会保证引用所引用的值可见
                  */
             } else if ((f = tabAt(tab, i = (n - 1) & hash)) == null) { // 如果该位置上没有元素
-                // 如果有多个线程同时操作同一个位置的元素时，CAS时只会有一个会成功。失败的线程则进行下一轮for循环，再进行一次CAS操作
+                // 如果有多个线程同时操作同一个位置的元素时，CAS时只会有一个会成功。
+                // 失败的线程则进行下一轮for循环，再进行一次CAS操作时发现该位置不为空，则会走下面else里面的synchronized代码块
                 // 如果 i 位置的值为 null，那么就新建一个 node 插入
                 if (casTabAt(tab, i, null, new Node<K,V>(hash, key, value, null))) {
                 	break;                   // no lock when adding to empty bin
@@ -1128,19 +1137,26 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                  * 在对这个节点赋值的时候，发现该节点的已经被赋过值了，所以才进入到这里
                  * f就是数组当前节点已经被赋值了，所以只会对这一个节点加锁（分段加锁思想）
                  */
-                synchronized (f) { // 对第一节点进行加锁。
+                synchronized (f) { // 对数组当前位置的节点进行加锁
+
                     if (tabAt(tab, i) == f) {
+
                         if (fh >= 0) { // 为什么这个条件可以保证是链表结构？
+
                             binCount = 1;
+
                             for (Node<K,V> e = f;; ++binCount) {
                                 K ek;
                                 // 已经存在一个同样的 key
                                 if (e.hash == hash &&
                                     ((ek = e.key) == key || (ek != null && key.equals(ek)))) {
+
                                     oldVal = e.val;
+
                                     if (!onlyIfAbsent) { // 仅仅只在 value 为 null 的时候才赋值
                                         e.val = value;
                                     }
+
                                     break;
                                 }
                                 Node<K,V> pred = e;
@@ -1164,7 +1180,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                 }
                 
                 if (binCount != 0) {
-                    // 某个链表的长度已经达到了可以树化的标准
+                    // 某个链表的长度已经达到8就进行树化
                     if (binCount >= TREEIFY_THRESHOLD) {
                         treeifyBin(tab, i);
                     }
@@ -1175,8 +1191,10 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                 }
             }
         }
-        
+
+        // 计数，达到阀值0.75就扩容
         addCount(1L, binCount);
+
         return null;
     }
 
@@ -2353,7 +2371,11 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                         @SuppressWarnings("unchecked")
                         Node<K,V>[] nt = (Node<K,V>[])new Node<?,?>[n];
                         table = tab = nt;
-                        sc = n - (n >>> 2); // 这样做的原因是什么？
+                        /*
+                         * 假设n=16，那么sc=12，跟HashMap中的loadFactor效果一样。
+                         * 直接写成0.75不香吗？
+                         */
+                        sc = n - (n >>> 2);
                     }
                 } finally {
                     sizeCtl = sc;
@@ -2654,7 +2676,11 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
         CounterCell(long x) { value = x; }
     }
 
+    /**
+     * 这个方法只能获取到当前的一个快照。因为累加的时候，可能有其他线程在进行添加元素
+     */
     final long sumCount() {
+        // CounterCell与LongAdder类似
         CounterCell[] as = counterCells; CounterCell a;
         long sum = baseCount;
         if (as != null) {
