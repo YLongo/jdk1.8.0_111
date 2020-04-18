@@ -86,6 +86,7 @@ public class LinkedList<E> extends AbstractSequentialList<E> implements List<E>,
 
     /**
      * 头指针
+     * <br>
      * Pointer to first node.
      * Invariant: (first == null && last == null) ||
      *            (first.prev == null && first.item != null)
@@ -94,6 +95,7 @@ public class LinkedList<E> extends AbstractSequentialList<E> implements List<E>,
 
     /**
      * 尾指针
+     * <br>
      * Pointer to last node.
      * Invariant: (first == null && last == null) ||
      *            (last.next == null && last.item != null)
