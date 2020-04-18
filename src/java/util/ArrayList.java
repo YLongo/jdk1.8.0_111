@@ -532,6 +532,7 @@ public class ArrayList<E> extends AbstractList<E>
         int numMoved = size - index - 1;
         // 如果是最后一个元素，则不需要做复制操作，直接删除就好
         if (numMoved > 0) {
+            // 将需要删除位置后面的元素直接往前面移动一位
             System.arraycopy(elementData, index + 1, elementData, index, numMoved);
         }
 

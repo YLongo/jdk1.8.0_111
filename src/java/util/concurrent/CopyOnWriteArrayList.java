@@ -99,12 +99,13 @@ import java.util.function.UnaryOperator;
  * @param <E> the type of elements held in this collection
  */
 public class CopyOnWriteArrayList<E> implements List<E>, RandomAccess, Cloneable, java.io.Serializable {
+
     private static final long serialVersionUID = 8673264195747942595L;
 
     /** The lock protecting all mutators */
     final transient ReentrantLock lock = new ReentrantLock();
 
-    /** The array, accessed only via getArray/setArray. */
+    /**The array, accessed only via getArray/setArray. */
     private transient volatile Object[] array;
 
     /**
@@ -406,6 +407,13 @@ public class CopyOnWriteArrayList<E> implements List<E>, RandomAccess, Cloneable
     }
 
     /**
+     * <p>
+     * 直接通过下标去定位数组中的数值，因为array是volatile的，增删改之后，其它线程都会感知到，
+     * 而增删改操作都是先获取锁，再copy一个新数组进行操作，
+     * 所以对于读操作来说，直接读就行，甚至连CAS都不需要。
+     * 这样就可以保证读写之间不会有锁冲突，对于读多写少的情况是极好的。
+     * </p>
+     *
      * {@inheritDoc}
      *
      * @throws IndexOutOfBoundsException {@inheritDoc}
@@ -507,6 +515,10 @@ public class CopyOnWriteArrayList<E> implements List<E>, RandomAccess, Cloneable
     }
 
     /**
+     * <p>
+     * 复制元素时与{@link java.util.ArrayList#remove(int)}不同
+     * </p>
+     *
      * Removes the element at the specified position in this list.
      * Shifts any subsequent elements to the left (subtracts one from their
      * indices).  Returns the element that was removed from the list.
@@ -522,7 +534,7 @@ public class CopyOnWriteArrayList<E> implements List<E>, RandomAccess, Cloneable
             int len = elements.length;
             // 获取当前索引处的元素
             E oldValue = get(elements, index);
-            
+
             int numMoved = len - index - 1;
             
             // 表示删除的是最后一个元素
@@ -530,7 +542,9 @@ public class CopyOnWriteArrayList<E> implements List<E>, RandomAccess, Cloneable
                 setArray(Arrays.copyOf(elements, len - 1));
             } else { // 删除其它位置的元素
                 Object[] newElements = new Object[len - 1];
+                // 先将要删除位置前面的元素复制到新数组
                 System.arraycopy(elements, 0, newElements, 0, index);
+                // 然后将要删除位置后面的元素复制到新数组
                 System.arraycopy(elements, index + 1, newElements, index, numMoved);
                 // 设置新数组为当前数组
                 setArray(newElements);
