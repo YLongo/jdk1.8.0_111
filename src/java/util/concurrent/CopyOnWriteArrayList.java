@@ -435,7 +435,7 @@ public class CopyOnWriteArrayList<E> implements List<E>, RandomAccess, Cloneable
             Object[] elements = getArray();
             E oldValue = get(elements, index);
 
-            // 如果值不一样则复制一个新数组进行更新操作
+            // 如果值不一样则复制一个新数组进行更新操作（相等就没必要操作了）
             if (oldValue != element) {
                 int len = elements.length;
                 Object[] newElements = Arrays.copyOf(elements, len);
@@ -443,7 +443,7 @@ public class CopyOnWriteArrayList<E> implements List<E>, RandomAccess, Cloneable
                 setArray(newElements);
             } else {
                 // Not quite a no-op; ensures volatile write semantics
-                // 为了保证volatile，即将值刷新到主内存中，
+                // 虽然没有必要操作了，但我还是要操作一下（不解😅）
                 setArray(elements);
             }
             return oldValue;
@@ -482,6 +482,17 @@ public class CopyOnWriteArrayList<E> implements List<E>, RandomAccess, Cloneable
     }
 
     /**
+     *
+     * 与{@link java.util.ArrayList#add(int, Object)}操作不同。
+     * <br>
+     * <br>
+     * <p>
+     *  1. 新建一个比旧数组长度大1的新数组 <br>
+     *  2. 将旧数组index前面的数组复制到新数组index的前面 <br>
+     *  3. 将旧数组index后面的数组复制到新数组index的后面 <br>
+     *  4. 然后将新数组index处的值赋值为element
+     * </p>
+     * <br>
      * Inserts the specified element at the specified position in this
      * list. Shifts the element currently at that position (if any) and
      * any subsequent elements to the right (adds one to their indices).
@@ -494,19 +505,24 @@ public class CopyOnWriteArrayList<E> implements List<E>, RandomAccess, Cloneable
         try {
             Object[] elements = getArray();
             int len = elements.length;
-            if (index > len || index < 0)
-                throw new IndexOutOfBoundsException("Index: "+index+
-                                                    ", Size: "+len);
+            if (index > len || index < 0) {
+                throw new IndexOutOfBoundsException("Index: "+index+ ", Size: "+len);
+            }
             Object[] newElements;
             int numMoved = len - index;
-            if (numMoved == 0)
+
+            if (numMoved == 0) { // 表示将元素添加到最后的位置，则直接先扩容再赋值就行了
                 newElements = Arrays.copyOf(elements, len + 1);
-            else {
+            } else {
+                // 新建数组
                 newElements = new Object[len + 1];
+                // 复制index前面的部分
                 System.arraycopy(elements, 0, newElements, 0, index);
-                System.arraycopy(elements, index, newElements, index + 1,
-                                 numMoved);
+                // 复制index后面的部分
+                System.arraycopy(elements, index, newElements, index + 1, numMoved);
             }
+
+            // 给指定位置赋值
             newElements[index] = element;
             setArray(newElements);
         } finally {
@@ -571,7 +587,9 @@ public class CopyOnWriteArrayList<E> implements List<E>, RandomAccess, Cloneable
      */
     public boolean remove(Object o) {
         Object[] snapshot = getArray();
+        // 找到o当前的位置
         int index = indexOf(o, snapshot, 0, snapshot.length);
+        // 由于没有加锁，所以可能snapshot被改动过
         return (index < 0) ? false : remove(o, snapshot, index);
     }
 
@@ -585,28 +603,46 @@ public class CopyOnWriteArrayList<E> implements List<E>, RandomAccess, Cloneable
         try {
             Object[] current = getArray();
             int len = current.length;
+            /*
+             * 因为获取snapshot时并没有加锁，所有有可能这个时候会被修改过
+             * 如果其它线程修改过snapshot，则需要重新定位index的值
+             */
             if (snapshot != current) findIndex: {
+
                 int prefix = Math.min(index, len);
+
                 for (int i = 0; i < prefix; i++) {
+                    /*
+                     * 如果元素存在，snapshot变动过，而且元素位置被移动过，重新定位元素位置
+                     * 如果current与snapshot中当前位置的元素不相等，但是o却跟current当前位置的元素相等，
+                     * 那么表示元素的位置被移动到了i处
+                     */
                     if (current[i] != snapshot[i] && eq(o, current[i])) {
                         index = i;
                         break findIndex;
                     }
                 }
-                if (index >= len)
+                // index为数组最后一位的元素，但是这个元素已经被其它线程删除掉了
+                if (index >= len) {
                     return false;
-                if (current[index] == o)
+                }
+                // 如果元素存在，不管snapshot怎么变动，但是元素位置没有变动过，则直接跳出
+                if (current[index] == o) {
                     break findIndex;
+                }
+                // 该元素不存在，或者该元素不是数组末尾的元素，但是被删除掉了，所以以上的操作都找不到元素的位置
                 index = indexOf(o, current, index, len);
-                if (index < 0)
+                if (index < 0) {
                     return false;
+                }
             }
+
             Object[] newElements = new Object[len - 1];
             System.arraycopy(current, 0, newElements, 0, index);
-            System.arraycopy(current, index + 1,
-                             newElements, index,
-                             len - index - 1);
+            System.arraycopy(current, index + 1, newElements, index, len - index - 1);
+
             setArray(newElements);
+
             return true;
         } finally {
             lock.unlock();

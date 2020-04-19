@@ -510,6 +510,7 @@ public class ArrayList<E> extends AbstractList<E>
 
         rangeCheckForAdd(index);
 
+        // 先扩容，保证大小
         ensureCapacityInternal(size + 1);  // Increments modCount!!
         /*
          * 从哪里来：以index为起点，开始拷贝elementData数组中的数组

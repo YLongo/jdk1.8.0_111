@@ -109,8 +109,8 @@ import java.util.function.Consumer;
  * @author Doug Lea
  * @param <E> the type of elements held in this collection
  */
-public class ConcurrentLinkedQueue<E> extends AbstractQueue<E>
-        implements Queue<E>, java.io.Serializable {
+public class ConcurrentLinkedQueue<E> extends AbstractQueue<E> implements Queue<E>, java.io.Serializable {
+
     private static final long serialVersionUID = 196745693267521676L;
 
     /*
@@ -185,6 +185,7 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E>
      */
 
     private static class Node<E> {
+
         volatile E item;
         volatile Node<E> next;
 
@@ -324,6 +325,8 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E>
     }
 
     /**
+     * 画图一步步看，会比较清晰
+     * <br>
      * Inserts the specified element at the tail of this queue.
      * As the queue is unbounded, this method will never return {@code false}. <p>
      * 
@@ -333,70 +336,73 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E>
      * @throws NullPointerException if the specified element is null 如果指定的元素为 null
      */
     public boolean offer(E e) {
-        
-        // 1. 检查是否为 null
+
+        // e是不能为null的
         checkNotNull(e);
         
-        // 2. 
         final Node<E> newNode = new Node<E>(e);
 
-        // 3. 初始状态：t、p 都指向尾结点
+        // 初始状态：t、p 都指向尾结点
         for (Node<E> t = tail, p = t;;) {
-            
+
             Node<E> q = p.next;
             
-            // 4. 
-            if (q == null) { // q == null 说明 p 是尾结点
-                
+            if (q == null) { // q == null说明p是尾结点
                 // p is last node
-                // 5. 设置 p 节点的下一个节点。如果设置失败，则会一直进行尝试
+                // 设置p的下一个节点为新添加的节点。如果设置失败，则会一直进行尝试
                 if (p.casNext(null, newNode)) {
                     // Successful CAS is the linearization point
                     // for e to become an element of this queue,
                     // and for newNode to become "live".
-                    // 6. CAS 成功则表示 e 已经成功插入到队列中
-                    if (p != t) {
+                    if (p != t) { // 设置tail指针
                         // hop two nodes at a time
-                        // 一次跳跃两个节点
+                        // 失败了也没有关系，最后一个else会做一次check
                         casTail(t, newNode);  // Failure is OK.
                     }
                     return true;
                 }
                 // Lost CAS race to another thread; re-read next
-            } else if (p == q) { // 7.
+            } else if (p == q) {
                 // We have fallen off list.  If tail is unchanged, it
                 // will also be off-list, in which case we need to
                 // jump to head, from which all live nodes are always
                 // reachable.  Else the new tail is a better bet.
                 p = (t != (t = tail)) ? t : head;
-            } else { // 8.
+            } else {
                 // Check for tail updates after two hops.
+                // 用来保证tail一定会指向尾结点
                 p = (p != t && t != (t = tail)) ? t : q;
             }
         }
     }
 
     public E poll() {
+
         restartFromHead:
         for (;;) {
+
             for (Node<E> h = head, p = h, q;;) {
+
                 E item = p.item;
 
+                // 通过CAS将头节点（其实为head.next）节点变成null，然后再将head指针指向这个null值节点
+                // 即将头节点移除
+                // 在多线程的情况下，只有一个线程会成功，失败的线程则会在下一轮循环中去移除下一个节点
                 if (item != null && p.casItem(item, null)) {
                     // Successful CAS is the linearization point
                     // for item to be removed from this queue.
-                    if (p != h) // hop two nodes at a time
+                    if (p != h) { // hop two nodes at a time
                         updateHead(h, ((q = p.next) != null) ? q : p);
+                    }
                     return item;
-                }
-                else if ((q = p.next) == null) {
+                } else if ((q = p.next) == null) {
                     updateHead(h, p);
                     return null;
-                }
-                else if (p == q)
+                } else if (p == q) {
                     continue restartFromHead;
-                else
+                } else {
                     p = q;
+                }
             }
         }
     }
