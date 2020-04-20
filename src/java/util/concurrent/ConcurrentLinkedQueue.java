@@ -210,7 +210,6 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E> implements Queue<
         }
 
         // sum.misc.Unsafe mechanics
-
         private static final sun.misc.Unsafe UNSAFE;
         private static final long itemOffset;
         private static final long nextOffset;
@@ -349,7 +348,7 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E> implements Queue<
             
             if (q == null) { // q == null说明p是尾结点
                 // p is last node
-                // 设置p的下一个节点为新添加的节点。如果设置失败，则会一直进行尝试
+                // 通过CAS设置p的下一个节点为新添加的节点。如果设置失败，则会一直进行尝试
                 if (p.casNext(null, newNode)) {
                     // Successful CAS is the linearization point
                     // for e to become an element of this queue,
@@ -376,6 +375,9 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E> implements Queue<
         }
     }
 
+    /**
+     * 出队
+     */
     public E poll() {
 
         restartFromHead:
@@ -395,7 +397,7 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E> implements Queue<
                         updateHead(h, ((q = p.next) != null) ? q : p);
                     }
                     return item;
-                } else if ((q = p.next) == null) {
+                } else if ((q = p.next) == null) { // 下一个节点为空，则表示队列为空了
                     updateHead(h, p);
                     return null;
                 } else if (p == q) {
@@ -407,6 +409,9 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E> implements Queue<
         }
     }
 
+    /**
+     * 获取头结点的值。即node.item
+     */
     public E peek() {
         restartFromHead:
         for (;;) {
@@ -415,16 +420,19 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E> implements Queue<
                 if (item != null || (q = p.next) == null) {
                     updateHead(h, p);
                     return item;
-                }
-                else if (p == q)
+                } else if (p == q) {
                     continue restartFromHead;
-                else
+                } else {
                     p = q;
+                }
             }
         }
     }
 
     /**
+     * <p>
+     *     获取头结点。即node。注意与peek()的区别。
+     * </p>
      * Returns the first live (non-deleted) node on list, or null if none.
      * This is yet another variant of poll/peek; here returning the
      * first node, not element.  We could make peek() a wrapper around
@@ -455,10 +463,14 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E> implements Queue<
      * @return {@code true} if this queue contains no elements
      */
     public boolean isEmpty() {
+        // 头结点为空即没有包含元素
         return first() == null;
     }
 
     /**
+     * <p>
+     * 这个方法并不能获得队列的真是大小，因为可能有其它线程正在修改队列
+     * </p>
      * Returns the number of elements in this queue.  If this queue
      * contains more than {@code Integer.MAX_VALUE} elements, returns
      * {@code Integer.MAX_VALUE}.
@@ -475,12 +487,18 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E> implements Queue<
      * @return the number of elements in this queue
      */
     public int size() {
+
         int count = 0;
-        for (Node<E> p = first(); p != null; p = succ(p))
-            if (p.item != null)
+        // 获取第一个节点之后，开始进行遍历
+        for (Node<E> p = first(); p != null; p = succ(p)) {
+            if (p.item != null) {
                 // Collection.size() spec says to max out
-                if (++count == Integer.MAX_VALUE)
+                // 队列的长度不能超过这个值
+                if (++count == Integer.MAX_VALUE) {
                     break;
+                }
+            }
+        }
         return count;
     }
 
@@ -493,12 +511,18 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E> implements Queue<
      * @return {@code true} if this queue contains the specified element
      */
     public boolean contains(Object o) {
-        if (o == null) return false;
+
+        if (o == null) {
+            return false;
+        }
+        // 遍历整个队列，查找是否有元素跟o相等，有一个相等则返回true
         for (Node<E> p = first(); p != null; p = succ(p)) {
             E item = p.item;
-            if (item != null && o.equals(item))
+            if (item != null && o.equals(item)) {
                 return true;
+            }
         }
+
         return false;
     }
 
@@ -514,26 +538,38 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E> implements Queue<
      * @return {@code true} if this queue changed as a result of the call
      */
     public boolean remove(Object o) {
+
         if (o != null) {
+
             Node<E> next, pred = null;
+
+            // 遍历整个队列，来找到第一个与o相等的元素。如果有多个元素，只会删除第一个
             for (Node<E> p = first(); p != null; pred = p, p = next) {
+
                 boolean removed = false;
                 E item = p.item;
+
                 if (item != null) {
+                    // 不相等，则继续往下查找
                     if (!o.equals(item)) {
                         next = succ(p);
                         continue;
                     }
+                    // 相等则通过CAS当前节点的值设置为null
                     removed = p.casItem(item, null);
                 }
-
+                // 将删除的元素从队列中移除
                 next = succ(p);
-                if (pred != null && next != null) // unlink
+                if (pred != null && next != null) { // unlink
                     pred.casNext(p, next);
-                if (removed)
+                }
+                // 删除成功返回
+                if (removed) {
                     return true;
+                }
             }
         }
+
         return false;
     }
 
@@ -700,11 +736,18 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E> implements Queue<
 
     private class Itr implements Iterator<E> {
         /**
+         * <p>
+         *     保存下一个节点
+         * </p>
          * Next node to return item for.
          */
         private Node<E> nextNode;
 
         /**
+         * <p>
+         *     用于保存下一个节点的值。
+         *     这个是为了保证hasNext()为true时，调用next()返回时一定会有值返回。
+         * </p>
          * nextItem holds on to item fields because once we claim
          * that an element exists in hasNext(), we must return it in
          * the following next() call even if it was in the process of
@@ -713,6 +756,9 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E> implements Queue<
         private E nextItem;
 
         /**
+         * <p>
+         *     用对节点进行删除
+         * </p>
          * Node of the last returned item, to support remove.
          */
         private Node<E> lastRet;
@@ -722,6 +768,9 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E> implements Queue<
         }
 
         /**
+         * <p>
+         *     返回下一个节点
+         * </p>
          * Moves to next valid node and returns item to return for
          * next(), or null if no such.
          */
@@ -737,7 +786,6 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E> implements Queue<
                 pred = nextNode;
                 p = succ(nextNode);
             }
-
             for (;;) {
                 if (p == null) {
                     nextNode = null;
@@ -752,8 +800,9 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E> implements Queue<
                 } else {
                     // skip over nulls
                     Node<E> next = succ(p);
-                    if (pred != null && next != null)
+                    if (pred != null && next != null) {
                         pred.casNext(p, next);
+                    }
                     p = next;
                 }
             }
@@ -764,13 +813,17 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E> implements Queue<
         }
 
         public E next() {
-            if (nextNode == null) throw new NoSuchElementException();
+            if (nextNode == null) {
+                throw new NoSuchElementException();
+            }
             return advance();
         }
 
         public void remove() {
             Node<E> l = lastRet;
-            if (l == null) throw new IllegalStateException();
+            if (l == null) {
+                throw new IllegalStateException();
+            }
             // rely on a future traversal to relink.
             l.item = null;
             lastRet = null;
