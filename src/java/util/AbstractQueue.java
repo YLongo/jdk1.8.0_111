@@ -144,8 +144,7 @@ public abstract class AbstractQueue<E>
      * returns <tt>null</tt>.
      */
     public void clear() {
-        while (poll() != null)
-            ;
+        while (poll() != null);
     }
 
     /**

@@ -79,8 +79,7 @@ import java.util.Spliterator;
  * @author Doug Lea
  * @param <E> the type of elements held in this collection
  */
-public class ArrayBlockingQueue<E> extends AbstractQueue<E>
-        implements BlockingQueue<E>, java.io.Serializable {
+public class ArrayBlockingQueue<E> extends AbstractQueue<E> implements BlockingQueue<E>, java.io.Serializable {
 
     /**
      * Serialization ID. This class relies on default serialization
@@ -93,10 +92,18 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
     /** The queued items */
     final Object[] items;
 
-    /** items index for next take, poll, peek or remove */
+    /**
+     * <p>
+     *     下一个元素要出队的位置
+     * </p>
+     * items index for next take, poll, peek or remove */
     int takeIndex;
 
-    /** items index for next put, offer, or add */
+    /**
+     * <p>
+     *     下一个元素要入队的位置
+     * </p>
+     * items index for next put, offer, or add */
     int putIndex;
 
     /** Number of elements in the queue */
@@ -110,10 +117,18 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
     /** Main lock guarding all access */
     final ReentrantLock lock;
 
-    /** Condition for waiting takes */
+    /**
+     * <p>
+     *     take锁的条件队列
+     * </p>
+     * Condition for waiting takes */
     private final Condition notEmpty;
 
-    /** Condition for waiting puts */
+    /**
+     * <p>
+     *     put锁的条件队列
+     * </p>
+     * Condition for waiting puts */
     private final Condition notFull;
 
     /**
@@ -159,9 +174,12 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
         // assert items[putIndex] == null;
         final Object[] items = this.items;
         items[putIndex] = x;
-        if (++putIndex == items.length)
+        // 队列满了则从头开始进行入队
+        if (++putIndex == items.length) {
             putIndex = 0;
+        }
         count++;
+        // 通知take线程来拿数据
         notEmpty.signal();
     }
 
@@ -176,12 +194,18 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
         @SuppressWarnings("unchecked")
         E x = (E) items[takeIndex];
         items[takeIndex] = null;
-        if (++takeIndex == items.length)
+        // 如果数组中最后一个元素出队了，则开始下一轮元素的出队
+        if (++takeIndex == items.length) {
             takeIndex = 0;
+        }
+
         count--;
-        if (itrs != null)
+        if (itrs != null) {
             itrs.elementDequeued();
+        }
+
         notFull.signal();
+
         return x;
     }
 
@@ -236,6 +260,7 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
      * @throws IllegalArgumentException if {@code capacity < 1}
      */
     public ArrayBlockingQueue(int capacity) {
+        // 默认为非公平锁
         this(capacity, false);
     }
 
@@ -250,11 +275,15 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
      * @throws IllegalArgumentException if {@code capacity < 1}
      */
     public ArrayBlockingQueue(int capacity, boolean fair) {
-        if (capacity <= 0)
+        if (capacity <= 0) {
             throw new IllegalArgumentException();
+        }
         this.items = new Object[capacity];
+        // 指定是否需要公平锁，默认为非公平锁
         lock = new ReentrantLock(fair);
+        // take锁（出队）的条件队列
         notEmpty = lock.newCondition();
+        // put锁（入队）的条件队列
         notFull =  lock.newCondition();
     }
 
@@ -326,9 +355,10 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
+            // 队列满则直接返回
             if (count == items.length)
                 return false;
-            else {
+            else { // 没满则添加元素
                 enqueue(e);
                 return true;
             }
@@ -338,6 +368,9 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
     }
 
     /**
+     * <p>
+     *     在尾部插入元素，当队列满了时，则进行等待
+     * </p>
      * Inserts the specified element at the tail of this queue, waiting
      * for space to become available if the queue is full.
      *
@@ -345,13 +378,22 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
      * @throws NullPointerException {@inheritDoc}
      */
     public void put(E e) throws InterruptedException {
+
+        // 元素不能为null
         checkNotNull(e);
+
+        // 获取锁，并且可中断
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
+
         try {
-            while (count == items.length)
+            // 如果队列满了就在条件队列中等待
+            while (count == items.length) {
                 notFull.await();
+            }
+            // 元素入队
             enqueue(e);
+
         } finally {
             lock.unlock();
         }
@@ -365,19 +407,21 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
      * @throws InterruptedException {@inheritDoc}
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean offer(E e, long timeout, TimeUnit unit)
-        throws InterruptedException {
+    public boolean offer(E e, long timeout, TimeUnit unit) throws InterruptedException {
 
         checkNotNull(e);
         long nanos = unit.toNanos(timeout);
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
         try {
+            // 添加元素时在指定的时间内还没有返回，则直接返回false表示添加失败
             while (count == items.length) {
-                if (nanos <= 0)
+                if (nanos <= 0) {
                     return false;
+                }
                 nanos = notFull.awaitNanos(nanos);
             }
+
             enqueue(e);
             return true;
         } finally {
@@ -389,6 +433,7 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
+            // 队列满则直接返回空，没满则进行元素的添加
             return (count == 0) ? null : dequeue();
         } finally {
             lock.unlock();
@@ -399,8 +444,11 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
         try {
-            while (count == 0)
+            // 如果队列空了，则进行等待
+            while (count == 0) {
                 notEmpty.await();
+            }
+
             return dequeue();
         } finally {
             lock.unlock();
@@ -412,9 +460,11 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
         try {
+            // 等待指定的时间队列还是为空，则直接返回null
             while (count == 0) {
-                if (nanos <= 0)
+                if (nanos <= 0) {
                     return null;
+                }
                 nanos = notEmpty.awaitNanos(nanos);
             }
             return dequeue();
@@ -427,6 +477,7 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
+            // 当队列为空时，返回的是null
             return itemAt(takeIndex); // null when queue is empty
         } finally {
             lock.unlock();
@@ -444,6 +495,7 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
+            // 获取去队列元素时，直接加锁，所以这个值是准确的
             return count;
         } finally {
             lock.unlock();
@@ -491,7 +543,11 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
      * @return {@code true} if this queue changed as a result of the call
      */
     public boolean remove(Object o) {
-        if (o == null) return false;
+
+        if (o == null) {
+            return false;
+        }
+
         final Object[] items = this.items;
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -500,12 +556,14 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
                 final int putIndex = this.putIndex;
                 int i = takeIndex;
                 do {
+                    // 遍历判断元素是否相等，相等则进行移除
                     if (o.equals(items[i])) {
                         removeAt(i);
                         return true;
                     }
-                    if (++i == items.length)
+                    if (++i == items.length) {
                         i = 0;
+                    }
                 } while (i != putIndex);
             }
             return false;
