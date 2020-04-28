@@ -83,12 +83,14 @@ public class Executors {
      * @throws IllegalArgumentException if {@code nThreads <= 0}
      */
     public static ExecutorService newFixedThreadPool(int nThreads) {
-        return new ThreadPoolExecutor(nThreads, 						  // int corePoolSize,    核心线程池的数量 
-        							  nThreads, 						  // int maximumPoolSize, 最大线程池的数量
-                                      0L,                             	  // long keepAliveTime,  最大存活时间为 0，即空闲就销毁
-                                      TimeUnit.MILLISECONDS,              // TimeUnit unit,       时间单位为毫秒
-                                      new LinkedBlockingQueue<Runnable>() // BlockingQueue<Runnable> workQueue 线程工作队列，最大数量为 Integer.MAX_VALUE  
-                                     ); 
+        return new ThreadPoolExecutor(
+                nThreads, // int corePoolSize,    核心线程池的数量
+                nThreads, // int maximumPoolSize, 如果线程池里的线程不够用了，等待队列还塞满了，则会增加到最大线程池的数量
+                0L,       // long keepAliveTime,  如果线程数量超出了corePoolSize，超出corePoolSize指定数量的线程，
+                          //                      就会在空闲keepAliveTime毫秒之后，就会自动被释放掉
+                TimeUnit.MILLISECONDS, // TimeUnit unit,       时间单位为毫秒
+                new LinkedBlockingQueue<Runnable>() // BlockingQueue<Runnable> workQueue 线程工作队列，最大数量为 Integer.MAX_VALUE
+            );
     }
 
     /**
