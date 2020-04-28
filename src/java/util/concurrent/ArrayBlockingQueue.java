@@ -433,7 +433,7 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E> implements BlockingQ
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
-            // 队列满则直接返回空，没满则进行元素的添加
+            // 队列为空则直接返回，否则进行元素出队（删除）
             return (count == 0) ? null : dequeue();
         } finally {
             lock.unlock();
