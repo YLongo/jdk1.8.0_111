@@ -587,9 +587,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      * state to a negative value, and clear it upon start (in
      * runWorker).
      */
-    private final class Worker
-        extends AbstractQueuedSynchronizer
-        implements Runnable
+    private final class Worker extends AbstractQueuedSynchronizer implements Runnable
     {
         /**
          * This class will never be serialized, but we provide a
