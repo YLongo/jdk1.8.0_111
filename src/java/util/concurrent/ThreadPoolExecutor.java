@@ -909,6 +909,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
             int rs = runStateOf(c);
 
             // Check if queue empty only if necessary.
+            // 如果线程池的已经被shutdoen了，则会拒绝任务执行
             if (rs >= SHUTDOWN 
                     && !(rs == SHUTDOWN && firstTask == null && !workQueue.isEmpty())) {
                 return false;                
@@ -1091,7 +1092,8 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
             // （活跃线程数大于maximumPoolSize或者不允许超时）
             // 且
             // 活跃线程数大于1或者队列为空
-            // 这个条件说简单点就是，超时或者
+            // 这个条件说简单点就是，不允许超时或者线程数量大于核心线程数
+            // 满足了这个条件，就要对worker进行回收
             if ((wc > maximumPoolSize || (timed && timedOut))
                     && (wc > 1 || workQueue.isEmpty())) {
 
@@ -1214,7 +1216,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
             }
             completedAbruptly = false;
         } finally {
-            // task为空，则会去移除掉线程池中的worker
+            // task为空，表示队列中已经没有任务要去执行了，则会去移除掉线程池中的worker
             processWorkerExit(w, completedAbruptly);
         }
     }
