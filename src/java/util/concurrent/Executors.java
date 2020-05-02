@@ -171,9 +171,9 @@ public class Executors {
      */
     public static ExecutorService newSingleThreadExecutor() {
         return new FinalizableDelegatedExecutorService(
-        		new ThreadPoolExecutor(1, 
-        							   1,  // 核心线程池跟最大线程池都为 1
-        							   0L, 
+        		new ThreadPoolExecutor(1,  // 核心线程池
+        							   1,  // 最大线程池
+        							   0L, // 线程存活时间
         							   TimeUnit.MILLISECONDS, 
         							   new LinkedBlockingQueue<Runnable>() // 阻塞队列的长度为 Integer.MAX_VALUE
         							  ));

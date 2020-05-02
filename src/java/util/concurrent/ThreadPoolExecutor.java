@@ -1696,6 +1696,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      */
     void ensurePrestart() {
         int wc = workerCountOf(ctl.get());
+        // 只有当线程池中的线程数小于corePoolSize时才会去新建worker
         if (wc < corePoolSize)
             addWorker(null, true);
         else if (wc == 0)

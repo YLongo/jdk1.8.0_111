@@ -34,11 +34,12 @@
  */
 
 package java.util.concurrent;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.*;
+
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * A {@link ThreadPoolExecutor} that can additionally schedule
@@ -325,13 +326,15 @@ public class ScheduledThreadPoolExecutor
         if (isShutdown())
             reject(task);
         else {
+            // 所有的任务都先放入延迟队列中
             super.getQueue().add(task);
             if (isShutdown() &&
                 !canRunInCurrentRunState(task.isPeriodic()) &&
                 remove(task))
                 task.cancel(false);
-            else
+            else { // 然后新建worker去队列中获取任务执行
                 ensurePrestart();
+            }
         }
     }
 
@@ -427,11 +430,11 @@ public class ScheduledThreadPoolExecutor
      * @throws IllegalArgumentException if {@code corePoolSize < 0}
      */
     public ScheduledThreadPoolExecutor(int corePoolSize) {
-        super(corePoolSize,          // 
-        	  Integer.MAX_VALUE,     // 最大线程数量
+        super(corePoolSize,          // 核心线程数
+        	  Integer.MAX_VALUE,     // 最大线程数
         	  0,                     // 空闲即销毁
         	  NANOSECONDS,           // 时间单位为纳秒
-              new DelayedWorkQueue() //
+              new DelayedWorkQueue() // 延迟队列
              );
     }
 
