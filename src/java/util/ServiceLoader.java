@@ -30,14 +30,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.security.AccessController;
 import java.security.AccessControlContext;
+import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
 
 
 /**
@@ -182,12 +177,12 @@ import java.util.NoSuchElementException;
  * @since 1.6
  */
 
-public final class ServiceLoader<S>
-    implements Iterable<S>
-{
+public final class ServiceLoader<S> implements Iterable<S> {
 
+    // 具体的内容需要放在该文件夹下
     private static final String PREFIX = "META-INF/services/";
 
+    // 提供服务的接口或者类
     // The class or interface representing the service being loaded
     private final Class<S> service;
 
@@ -198,6 +193,7 @@ public final class ServiceLoader<S>
     private final AccessControlContext acc;
 
     // Cached providers, in instantiation order
+    // 将服务实现类给缓存起来
     private LinkedHashMap<String,S> providers = new LinkedHashMap<>();
 
     // The current lazy-lookup iterator
@@ -216,6 +212,7 @@ public final class ServiceLoader<S>
      */
     public void reload() {
         providers.clear();
+        // 懒加载。也就是在实际调用的时候才会去加载具体的实现
         lookupIterator = new LazyIterator(service, loader);
     }
 
@@ -248,10 +245,8 @@ public final class ServiceLoader<S>
     // Parse a single line from the given configuration file, adding the name
     // on the line to the names list.
     //
-    private int parseLine(Class<?> service, URL u, BufferedReader r, int lc,
-                          List<String> names)
-        throws IOException, ServiceConfigurationError
-    {
+    private int parseLine(Class<?> service, URL u, BufferedReader r, int lc, List<String> names) throws IOException, ServiceConfigurationError {
+
         String ln = r.readLine();
         if (ln == null) {
             return -1;
@@ -271,8 +266,10 @@ public final class ServiceLoader<S>
                 if (!Character.isJavaIdentifierPart(cp) && (cp != '.'))
                     fail(service, u, lc, "Illegal provider-class name: " + ln);
             }
-            if (!providers.containsKey(ln) && !names.contains(ln))
+            // 将文件中的内容放入list中
+            if (!providers.containsKey(ln) && !names.contains(ln)) {
                 names.add(ln);
+            }
         }
         return lc + 1;
     }
@@ -294,9 +291,8 @@ public final class ServiceLoader<S>
     //         If an I/O error occurs while reading from the given URL, or
     //         if a configuration-file format error is detected
     //
-    private Iterator<String> parse(Class<?> service, URL u)
-        throws ServiceConfigurationError
-    {
+    private Iterator<String> parse(Class<?> service, URL u) throws ServiceConfigurationError {
+
         InputStream in = null;
         BufferedReader r = null;
         ArrayList<String> names = new ArrayList<>();
@@ -304,7 +300,10 @@ public final class ServiceLoader<S>
             in = u.openStream();
             r = new BufferedReader(new InputStreamReader(in, "utf-8"));
             int lc = 1;
+
+            // 解析文件中的内容，放入list中
             while ((lc = parseLine(service, u, r, lc, names)) >= 0);
+
         } catch (IOException x) {
             fail(service, "Error reading configuration file", x);
         } finally {
@@ -320,9 +319,7 @@ public final class ServiceLoader<S>
 
     // Private inner class implementing fully-lazy provider lookup
     //
-    private class LazyIterator
-        implements Iterator<S>
-    {
+    private class LazyIterator implements Iterator<S> {
 
         Class<S> service;
         ClassLoader loader;
@@ -341,49 +338,59 @@ public final class ServiceLoader<S>
             }
             if (configs == null) {
                 try {
+                    // META-INF/services/接口或类的全限定名
                     String fullName = PREFIX + service.getName();
-                    if (loader == null)
+                    // 加载文件中的内容
+                    if (loader == null) {
                         configs = ClassLoader.getSystemResources(fullName);
-                    else
+                    } else {
                         configs = loader.getResources(fullName);
+                    }
                 } catch (IOException x) {
                     fail(service, "Error locating configuration files", x);
                 }
             }
+
             while ((pending == null) || !pending.hasNext()) {
                 if (!configs.hasMoreElements()) {
                     return false;
                 }
+                // 开始解析文件中的内容
                 pending = parse(service, configs.nextElement());
             }
+            // 在next()中使用
             nextName = pending.next();
+
             return true;
         }
 
         private S nextService() {
-            if (!hasNextService())
+
+            if (!hasNextService()) {
                 throw new NoSuchElementException();
+            }
+
             String cn = nextName;
             nextName = null;
             Class<?> c = null;
             try {
+                // 根据类的全限定名生成类
                 c = Class.forName(cn, false, loader);
             } catch (ClassNotFoundException x) {
-                fail(service,
-                     "Provider " + cn + " not found");
+                fail(service, "Provider " + cn + " not found");
             }
+
             if (!service.isAssignableFrom(c)) {
-                fail(service,
-                     "Provider " + cn  + " not a subtype");
+                fail(service, "Provider " + cn  + " not a subtype");
             }
             try {
+                //生成一个类的实例
                 S p = service.cast(c.newInstance());
+                // 将该实例缓存起来
                 providers.put(cn, p);
                 return p;
             } catch (Throwable x) {
-                fail(service,
-                     "Provider " + cn + " could not be instantiated",
-                     x);
+                fail(service, "Provider " + cn + " could not be instantiated", x);
             }
             throw new Error();          // This cannot happen
         }
@@ -465,18 +472,21 @@ public final class ServiceLoader<S>
     public Iterator<S> iterator() {
         return new Iterator<S>() {
 
-            Iterator<Map.Entry<String,S>> knownProviders
-                = providers.entrySet().iterator();
+            Iterator<Map.Entry<String,S>> knownProviders = providers.entrySet().iterator();
 
+            // 判断是否有具体的实现类
             public boolean hasNext() {
-                if (knownProviders.hasNext())
+                if (knownProviders.hasNext()) {
                     return true;
+                }
+                // 第一次调用时会走该方法
                 return lookupIterator.hasNext();
             }
 
             public S next() {
-                if (knownProviders.hasNext())
+                if (knownProviders.hasNext()) {
                     return knownProviders.next().getValue();
+                }
                 return lookupIterator.next();
             }
 
@@ -504,9 +514,7 @@ public final class ServiceLoader<S>
      *
      * @return A new service loader
      */
-    public static <S> ServiceLoader<S> load(Class<S> service,
-                                            ClassLoader loader)
-    {
+    public static <S> ServiceLoader<S> load(Class<S> service, ClassLoader loader) {
         return new ServiceLoader<>(service, loader);
     }
 
@@ -529,7 +537,7 @@ public final class ServiceLoader<S>
      * @param  <S> the class of the service type
      *
      * @param  service
-     *         The interface or abstract class representing the service
+     *         The interface or abstract class representing the service 接口或者抽象类
      *
      * @return A new service loader
      */
