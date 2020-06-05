@@ -53,7 +53,15 @@ JDK 1.8 源码注释
 
   如果想要重新加载，可以调用`reload()`方法
 
-  
+- [ThreadPoolExecutor](src/java/util/concurrent/ThreadPoolExecutor.java)
+
+- [Executors](src/java/util/concurrent/Executors.java)
+
+- [LinkedBlockingQueue](src/java/util/concurrent/LinkedBlockingQueue.java)
+
+- [ArrayBlockingQueue](src/java/util/concurrent/ArrayBlockingQueue.java)
+
+- [LongAdder](src/java/util/concurrent/atomic/LongAdder.java)
 
 
 
