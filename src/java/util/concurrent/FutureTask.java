@@ -74,6 +74,8 @@ public class FutureTask<V> implements RunnableFuture<V> {
      */
 
     /**
+     * 用于任务的当前状态，默认值是：NEW
+     * <br>
      * The run state of this task, initially NEW.  The run state
      * transitions to a terminal state only in methods set,
      * setException, and cancel.  During completion, state may take on
@@ -82,29 +84,61 @@ public class FutureTask<V> implements RunnableFuture<V> {
      * cancel(true)). Transitions from these intermediate to final
      * states use cheaper ordered/lazy writes because values are unique
      * and cannot be further modified.
-     *
-     * Possible state transitions:
-     * NEW -> COMPLETING -> NORMAL
-     * NEW -> COMPLETING -> EXCEPTIONAL
-     * NEW -> CANCELLED
-     * NEW -> INTERRUPTING -> INTERRUPTED
+     * <br>
+     * <br>
+     * Possible state transitions 可能的状态转换: <br><br>
+     * NEW -> COMPLETING -> NORMAL 正常结束流程 <br>
+     * NEW -> COMPLETING -> EXCEPTIONAL 执行过程中发生异常 <br>
+     * NEW -> CANCELLED 还没开始执行就被取消了 <br>
+     * NEW -> INTERRUPTING -> INTERRUPTED 执行过程中被中断 <br>
      */
     private volatile int state;
+    /**
+     * 默认值
+     */
     private static final int NEW          = 0;
+    /**
+     * 任务执行完成，拿到了任务的返回结果
+     */
     private static final int COMPLETING   = 1;
+    /**
+     * 返回结果设置到{@link #outcome}中时
+     */
     private static final int NORMAL       = 2;
+    /**
+     * 运行过程中抛异常了
+     */
     private static final int EXCEPTIONAL  = 3;
+    /**
+     * NEW状态的任务被取消
+     */
     private static final int CANCELLED    = 4;
+    /**
+     * 正在执行中的任务被调用了{@link #cancel(boolean)}
+     */
     private static final int INTERRUPTING = 5;
+    /**
+     * 正在执行中的任务被调用了{@link #cancel(boolean)}，该方法执行完成了
+     */
     private static final int INTERRUPTED  = 6;
 
     /** The underlying callable; nulled out after running */
     private Callable<V> callable;
-    /** The result to return or exception to throw from get() */
+
+    /** 正常返回时的结果，或者记录异常信息
+     * <br>
+     * The result to return or exception to throw from get() */
     private Object outcome; // non-volatile, protected by state reads/writes
-    /** The thread running the callable; CASed during run() */
+
+    /**
+     * 记录当前运行的线程
+     * @see #run()
+     * The thread running the callable; CASed during run() */
     private volatile Thread runner;
-    /** Treiber stack of waiting threads */
+
+    /** 当前等待线程的单向链表
+     * <br>
+     * Treiber stack of waiting threads */
     private volatile WaitNode waiters;
 
     /**
@@ -115,10 +149,14 @@ public class FutureTask<V> implements RunnableFuture<V> {
     @SuppressWarnings("unchecked")
     private V report(int s) throws ExecutionException {
         Object x = outcome;
-        if (s == NORMAL)
+        if (s == NORMAL) { // 任务正常完成，返回结果
             return (V)x;
-        if (s >= CANCELLED)
+        }
+        // @see #cancel()
+        if (s >= CANCELLED) { // 任务被取消，抛异常
             throw new CancellationException();
+        }
+        // 任务执行出错，抛异常
         throw new ExecutionException((Throwable)x);
     }
 
@@ -130,8 +168,9 @@ public class FutureTask<V> implements RunnableFuture<V> {
      * @throws NullPointerException if the callable is null
      */
     public FutureTask(Callable<V> callable) {
-        if (callable == null)
+        if (callable == null) {
             throw new NullPointerException();
+        }
         this.callable = callable;
         this.state = NEW;       // ensure visibility of callable
     }
@@ -149,6 +188,7 @@ public class FutureTask<V> implements RunnableFuture<V> {
      * @throws NullPointerException if the runnable is null
      */
     public FutureTask(Runnable runnable, V result) {
+        // 因为runnable没有返回值，所以把runnable包装成callable，返回返回result
         this.callable = Executors.callable(runnable, result);
         this.state = NEW;       // ensure visibility of callable
     }
@@ -162,16 +202,24 @@ public class FutureTask<V> implements RunnableFuture<V> {
     }
 
     public boolean cancel(boolean mayInterruptIfRunning) {
-        if (!(state == NEW &&
-              UNSAFE.compareAndSwapInt(this, stateOffset, NEW,
-                  mayInterruptIfRunning ? INTERRUPTING : CANCELLED)))
+        /*
+         * 1. 非NEW状态的任务取消失败
+         * 2. INTERRUPTING状态只会在这里设置
+         * 3. 如果NEW状态的任务被取消，则永远不会执行 @see #run()
+         */
+        if (!(state == NEW && UNSAFE.compareAndSwapInt(this, stateOffset, NEW,
+                                                       // 如果是取消正在执行的任务，则为中断，否则为取消
+                                                       mayInterruptIfRunning ? INTERRUPTING : CANCELLED))) {
             return false;
-        try {    // in case call to interrupt throws exception
+        }
+        try { // in case call to interrupt throws exception
+            // 中断正在执行的线程
             if (mayInterruptIfRunning) {
                 try {
                     Thread t = runner;
-                    if (t != null)
+                    if (t != null) {
                         t.interrupt();
+                    }
                 } finally { // final state
                     UNSAFE.putOrderedInt(this, stateOffset, INTERRUPTED);
                 }
@@ -187,22 +235,28 @@ public class FutureTask<V> implements RunnableFuture<V> {
      */
     public V get() throws InterruptedException, ExecutionException {
         int s = state;
-        if (s <= COMPLETING)
+        if (s <= COMPLETING) {
+            // 等待任务完成
             s = awaitDone(false, 0L);
+        }
         return report(s);
     }
 
     /**
      * @throws CancellationException {@inheritDoc}
      */
-    public V get(long timeout, TimeUnit unit)
-        throws InterruptedException, ExecutionException, TimeoutException {
-        if (unit == null)
+    public V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+
+        if (unit == null) {
             throw new NullPointerException();
+        }
+
         int s = state;
-        if (s <= COMPLETING &&
-            (s = awaitDone(true, unit.toNanos(timeout))) <= COMPLETING)
+        // 线程等待timeout指定的时间没有获取到结果，则抛出异常
+        if (s <= COMPLETING && (s = awaitDone(true, unit.toNanos(timeout))) <= COMPLETING) {
             throw new TimeoutException();
+        }
+        // 获取返回结果
         return report(s);
     }
 
@@ -252,26 +306,40 @@ public class FutureTask<V> implements RunnableFuture<V> {
         }
     }
 
+    /**
+     * @see Thread#start()
+     * <br>
+     * 最终会通过{@link Thread#run()}方法调用到这里来
+     */
     public void run() {
-        if (state != NEW ||
-            !UNSAFE.compareAndSwapObject(this, runnerOffset,
-                                         null, Thread.currentThread()))
+        /*
+         * 如果当前任务状态不是NEW，则不会执行
+         * 如果对NEW状态的任务调用了cancel()方法，则永远不会执行
+         */
+        // 将当前的线程设置到runner中去
+        if (state != NEW || !UNSAFE.compareAndSwapObject(this, runnerOffset, null, Thread.currentThread())) {
             return;
+        }
+
         try {
             Callable<V> c = callable;
             if (c != null && state == NEW) {
                 V result;
                 boolean ran;
                 try {
+                    // 调用我们自己实现的call()方法
                     result = c.call();
                     ran = true;
                 } catch (Throwable ex) {
                     result = null;
                     ran = false;
+                    // 如果执行过程发生了异常，则将异常信息返回
                     setException(ex);
                 }
-                if (ran)
+                if (ran) {
+                    // 将执行结果返回
                     set(result);
+                }
             }
         } finally {
             // runner must be non-null until state is settled to
@@ -280,8 +348,10 @@ public class FutureTask<V> implements RunnableFuture<V> {
             // state must be re-read after nulling runner to prevent
             // leaked interrupts
             int s = state;
-            if (s >= INTERRUPTING)
+            // 如果任务在执行的过程中，被调用了cancel()方法
+            if (s >= INTERRUPTING) {
                 handlePossibleCancellationInterrupt(s);
+            }
         }
     }
 
@@ -331,9 +401,12 @@ public class FutureTask<V> implements RunnableFuture<V> {
     private void handlePossibleCancellationInterrupt(int s) {
         // It is possible for our interrupter to stall before getting a
         // chance to interrupt us.  Let's spin-wait patiently.
-        if (s == INTERRUPTING)
-            while (state == INTERRUPTING)
+        if (s == INTERRUPTING) {
+            while (state == INTERRUPTING) {
+                // 自旋，等待#cancel()方法执行完成
                 Thread.yield(); // wait out pending interrupt
+            }
+        }
 
         // assert state == INTERRUPTED;
 
@@ -347,6 +420,8 @@ public class FutureTask<V> implements RunnableFuture<V> {
     }
 
     /**
+     * 单向链表。用来记录等待调用的线程
+     * <br>
      * Simple linked list nodes to record waiting threads in a Treiber
      * stack.  See other classes such as Phaser and SynchronousQueue
      * for more detailed explanation.
@@ -354,10 +429,14 @@ public class FutureTask<V> implements RunnableFuture<V> {
     static final class WaitNode {
         volatile Thread thread;
         volatile WaitNode next;
-        WaitNode() { thread = Thread.currentThread(); }
+        WaitNode() {
+            thread = Thread.currentThread();
+        }
     }
 
     /**
+     * 移除并唤醒所有等待结果的线程
+     * <br>
      * Removes and signals all waiting threads, invokes done(), and
      * nulls out callable.
      */
@@ -381,6 +460,7 @@ public class FutureTask<V> implements RunnableFuture<V> {
             }
         }
 
+        // 空方法
         done();
 
         callable = null;        // to reduce footprint
@@ -393,40 +473,44 @@ public class FutureTask<V> implements RunnableFuture<V> {
      * @param nanos time to wait, if timed
      * @return state upon completion
      */
-    private int awaitDone(boolean timed, long nanos)
-        throws InterruptedException {
+    private int awaitDone(boolean timed, long nanos) throws InterruptedException {
+
         final long deadline = timed ? System.nanoTime() + nanos : 0L;
         WaitNode q = null;
         boolean queued = false;
-        for (;;) {
-            if (Thread.interrupted()) {
-                removeWaiter(q);
-                throw new InterruptedException();
-            }
 
-            int s = state;
-            if (s > COMPLETING) {
-                if (q != null)
-                    q.thread = null;
-                return s;
+        for (;;) {
+
+            if (Thread.interrupted()) { // 如果线程被中断了
+                removeWaiter(q); // 从等待链表中移除当前线程
+                throw new InterruptedException(); // 并抛出异常
             }
-            else if (s == COMPLETING) // cannot time out yet
-                Thread.yield();
-            else if (q == null)
+            int s = state;
+            if (s > COMPLETING) { // 任务已经执行完成，返回执行结果
+                if (q != null) {
+                    q.thread = null;
+                }
+                return s;
+            } else if (s == COMPLETING) { // cannot time out yet
+                // 任务刚执行完成，等待任务状态变为NORMAL
+                Thread.yield(); // 让出当前CPU的调度，而不是加入到等待链表中，减少被唤醒的开销
+            } else if (q == null) {
                 q = new WaitNode();
-            else if (!queued)
-                queued = UNSAFE.compareAndSwapObject(this, waitersOffset,
-                                                     q.next = waiters, q);
-            else if (timed) {
+            } else if (!queued) { // 将当前线程添加在等待链表中
+                queued = UNSAFE.compareAndSwapObject(this, waitersOffset, q.next = waiters, q);
+            } else if (timed) { // 如果设置了超时时间
                 nanos = deadline - System.nanoTime();
-                if (nanos <= 0L) {
+                if (nanos <= 0L) { // 指定时间到了
+                    // 从等待链表中移除当前线程
                     removeWaiter(q);
+                    // 返回当前任务的状态
                     return state;
                 }
+                // 则暂停指定的时间
                 LockSupport.parkNanos(this, nanos);
-            }
-            else
+            } else { // 如果没有设置超时时间，则挂起当前线程
                 LockSupport.park(this);
+            }
         }
     }
 

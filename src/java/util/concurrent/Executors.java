@@ -409,8 +409,9 @@ public class Executors {
      * @throws NullPointerException if task null
      */
     public static <T> Callable<T> callable(Runnable task, T result) {
-        if (task == null)
+        if (task == null) {
             throw new NullPointerException();
+        }
         return new RunnableAdapter<T>(task, result);
     }
 
@@ -510,11 +511,14 @@ public class Executors {
     static final class RunnableAdapter<T> implements Callable<T> {
         final Runnable task;
         final T result;
+
         RunnableAdapter(Runnable task, T result) {
             this.task = task;
             this.result = result;
         }
+
         public T call() {
+            // 实际调用的还是Runnable#run方法
             task.run();
             return result;
         }
