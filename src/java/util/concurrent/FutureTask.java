@@ -337,7 +337,7 @@ public class FutureTask<V> implements RunnableFuture<V> {
                     setException(ex);
                 }
                 if (ran) {
-                    // 将执行结果返回
+                    // 将执行结果设置到outcome中再返回
                     set(result);
                 }
             }
