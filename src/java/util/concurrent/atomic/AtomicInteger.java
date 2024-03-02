@@ -184,7 +184,7 @@ public class AtomicInteger extends Number implements java.io.Serializable {
      * @return the updated value
      */
     public final int incrementAndGet() {
-        // +1是因为getAndAddInt返回的未累加钱的值
+        // +1是因为getAndAddInt返回的未累加前的值
         return unsafe.getAndAddInt(this, valueOffset, 1) + 1;
     }
 

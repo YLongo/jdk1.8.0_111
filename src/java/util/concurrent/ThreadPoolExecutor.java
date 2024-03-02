@@ -898,7 +898,8 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      * @param core if true use corePoolSize as bound, else
      * maximumPoolSize. (A boolean indicator is used here rather than a
      * value to ensure reads of fresh values after checking other pool
-     * state).
+     * state). <br>
+     *             如果为真，则使用corePoolSize作为界限，否则使用maximumPoolSize
      * @return true if successful
      */
     private boolean addWorker(Runnable firstTask, boolean core) {

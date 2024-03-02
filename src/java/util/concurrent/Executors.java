@@ -84,13 +84,12 @@ public class Executors {
      */
     public static ExecutorService newFixedThreadPool(int nThreads) {
         return new ThreadPoolExecutor(
-                nThreads, // int corePoolSize,    核心线程池的数量
-                nThreads, // int maximumPoolSize, 如果线程池里的线程不够用了，等待队列还塞满了，则会增加到最大线程池的数量
-                0L,       // long keepAliveTime,  如果线程数量超出了corePoolSize，超出corePoolSize指定数量的线程，
-                          //                      就会在空闲keepAliveTime毫秒之后，就会自动被释放掉
-                TimeUnit.MILLISECONDS, // TimeUnit unit,       时间单位为毫秒
-                new LinkedBlockingQueue<Runnable>() // BlockingQueue<Runnable> workQueue 线程工作队列，最大数量为 Integer.MAX_VALUE
-            );
+            nThreads,                           // int corePoolSize,    核心线程池的数量
+            nThreads,                           // int maximumPoolSize, 如果线程池里的线程不够用了，等待队列还塞满了，则会增加到最大线程池的数量
+            0L,                                 // long keepAliveTime,  如果线程数量超出了corePoolSize，超出corePoolSize指定数量的线程，就会在空闲keepAliveTime毫秒之后，就会自动被释放掉
+            TimeUnit.MILLISECONDS,              // TimeUnit unit,       时间单位为毫秒
+            new LinkedBlockingQueue<Runnable>() // BlockingQueue<Runnable> workQueue 线程工作队列，最大数量为 Integer.MAX_VALUE
+        );
     }
 
     /**
@@ -171,12 +170,13 @@ public class Executors {
      */
     public static ExecutorService newSingleThreadExecutor() {
         return new FinalizableDelegatedExecutorService(
-        		new ThreadPoolExecutor(1,  // 核心线程池
-        							   1,  // 最大线程池
-        							   0L, // 线程存活时间
-        							   TimeUnit.MILLISECONDS, 
-        							   new LinkedBlockingQueue<Runnable>() // 阻塞队列的长度为 Integer.MAX_VALUE
-        							  ));
+            new ThreadPoolExecutor(
+                1,                                  // 核心线程池
+                1,                                  // 最大线程池
+                0L,                                 // 线程存活时间
+                TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<Runnable>() // 阻塞队列的长度为 Integer.MAX_VALUE
+            ));
     }
 
     /**
@@ -218,12 +218,13 @@ public class Executors {
      * @return the newly created thread pool
      */
     public static ExecutorService newCachedThreadPool() {
-        return new ThreadPoolExecutor(0,                               // 核心线程数
-        							  Integer.MAX_VALUE,               // 最大线程数
-                                      60L,                             // 存活时间为 60 秒
-                                      TimeUnit.SECONDS,				   // 时间单位为秒
-                                      new SynchronousQueue<Runnable>() // 默认为非公平的队列 (不是先到先执行) 
-                                     );
+        return new ThreadPoolExecutor(
+            0,                               // 核心线程数
+            Integer.MAX_VALUE,               // 最大线程数
+            60L,                             // 存活时间为 60 秒
+            TimeUnit.SECONDS,                // 时间单位为秒
+            new SynchronousQueue<Runnable>() // 默认为非公平的队列 (不是先到先执行) 
+        );
     }
 
     /**

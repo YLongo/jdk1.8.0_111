@@ -119,11 +119,11 @@ abstract class Striped64 extends Number {
      */
     @sun.misc.Contended // 防止出现伪共享
     static final class Cell {
-    	
+
         volatile long value;
         
         Cell(long x) { 
-        	value = x; 
+            value = x; 
         }
         
         final boolean cas(long cmp, long val) {
@@ -148,7 +148,7 @@ abstract class Striped64 extends Number {
     static final int NCPU = Runtime.getRuntime().availableProcessors();
 
     /**
-     * Table of cells. When non-null, size is a power of 2.
+     * Table of cells. When non-null, size is a power of 2. <br>
      * 不为空时，容量为2的次方
      */
     transient volatile Cell[] cells;
@@ -160,7 +160,7 @@ abstract class Striped64 extends Number {
     transient volatile long base;
 
     /**
-     * Spinlock (locked via CAS) used when resizing and/or creating Cells.
+     * Spinlock (locked via CAS) used when resizing and/or creating Cells. <br>
      * 自旋锁（通过CAS来锁定）用于扩容或者新建Cell数组
      */
     transient volatile int cellsBusy;
@@ -268,11 +268,11 @@ abstract class Striped64 extends Number {
                     }
                     collide = false;
                 } else if (!wasUncontended) { // CAS already known to fail
-                	wasUncontended = true;    // Continue after rehash
+                // wasUncontended = true;    // Continue after rehash
                 // 如果 fn == null 表示的是使用 LongAdder
                 // 当前槽位有值，则通过CAS进行相加操作
                 } else if (a.cas(v = a.value, ((fn == null) ? v + x : fn.applyAsLong(v, x)))) {
-                	break;
+                    break;
                 // 只有当每个CPU都运行一个线程时才会使多线程的效果最佳，
                 // 也就是当cells数组元素个数与CPU个数一致时，每个Cell都使用一个CPU进行处理，这时性能才是最佳的。
                 } else if (n >= NCPU || cells != as) {
